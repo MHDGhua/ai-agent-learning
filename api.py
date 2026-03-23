@@ -2,7 +2,7 @@ import requests
 import json
 from pathlib import Path
 
-
+#这里把url删掉了，密钥也删掉了
 SUBSCRIPTION_KEY = '1111'
 vision_service_address = '2222'
 image_path = Path('image') / 'a.png'

@@ -1,0 +1,6 @@
+git add . ; git commit -m "本次修改内容" ; git push
+
+或者分步
+git add . 
+git commit -m "本次修改内容" 
+git push
