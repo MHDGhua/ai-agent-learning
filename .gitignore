@@ -1,0 +1,64 @@
+
+.env
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+
+# 虚拟环境
+.venv
+venv/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 敏感文件（非常重要！）
+.env
+*.key
+*.pem
+*.cert
+*.p12
+
+# 日志文件
+*.log
+logs/
+
+# 临时文件
+*.tmp
+*.temp
+
+# 个人文件
+personal_notes.txt
+=======
+### AL ###
+#Template for AL projects for Dynamics 365 Business Central
+#launch.json folder
+.vscode/
+#Cache folder
+.alcache/
+#Symbols folder
+.alpackages/
+#Snapshots folder
+.snapshots/
+#Testing Output folder
+.output/
+#Extension App-file
+*.app
+#Rapid Application Development File
+rad.json
+#Translation Base-file
+*.g.xlf
+#License-file
+*.flf
