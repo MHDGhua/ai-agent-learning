@@ -1,4 +1,6 @@
-
+#存放库
+#存放后要激活
 colorama
 requests
-python-dotenvS
+python-dotenv
+openai
