@@ -4,6 +4,12 @@
 git add . ; git commit -m "本次修改内容" ; git push
 
 或者分步
-git add . 
-git commit -m "本次修改内容：" 
-git push
+    git add . 
+    git commit -m "本次修改内容：" 
+    git push
+
+管理依赖：
+激活 merged_env： .\merged_env\Scripts\Activate.ps1
+将当前环境的完整依赖导出，方便以后重建： pip freeze > merged_requirements.txt
+
+
