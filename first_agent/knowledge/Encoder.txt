@@ -1,0 +1,27 @@
+## Transformer 是纯Attention 的Seq2Seq
+
+### 1.Seq2Seq 逻辑:
+
+*   output sequence
+*   Decoder ->
+*   Encoder ->
+*   input sequence ->
+
+### 2.Encoder:
+
+*   由多个Block叠成
+
+### 3.Block逻辑：
+
+*   vector
+*
+*   attention
+*   层归一化 \[pre-ln]
+*   残差连接
+*   1个前馈网络子层 (FFN:两个FC层）
+*   层归一化
+*   残差连接
+*
+*   1个多头自注意力子层（Multi-Head Self-Attention），1个多头自注意力可以用12个q(可设定)
+*
+*   vector

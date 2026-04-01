@@ -1,7 +1,7 @@
 import os
 from openai import AzureOpenAI
 from dotenv import load_dotenv
-
+from tenacity import retry, stop_after_attempt, wait_exponential
 load_dotenv()  #加载环境变量
 
 ENDPOINT = os.getenv('AZURE_OPENAI_ENDPOINT')
@@ -13,6 +13,8 @@ client = AzureOpenAI(    #AzureOpenAI的配置
     api_version="2024-12-01-preview"
 )
 #把问题交给大模型之后，内部就不管了，让他自己给我们返回的答案，这是他自身的算法给的
+#重试
+@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10))
 def call_llm(prompt: str) -> str:  #调用模型的函数：prompt 是用户输入的内容、上下文提示
     if not all([ENDPOINT, API_KEY, DEPLOYMENT_NAME]):
         return ' 错误:Azure OpenAI配置不完整'
