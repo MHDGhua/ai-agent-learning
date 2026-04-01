@@ -62,3 +62,19 @@ rad.json
 *.g.xlf
 #License-file
 *.flf
+# 虚拟环境
+.venv/
+.venv-4/
+
+# Python 缓存
+__pycache__/
+*.pyc
+
+# 向量数据库文件夹（二进制数据，不提交）
+chroma_db/
+
+# 日志文件
+agent.log
+
+# 临时依赖文件
+merged_requirements.txt
