@@ -5,6 +5,9 @@ from chromadb.utils import embedding_functions
 import os
 import sys
 
+#索引 检索放一起的学习文件
+
+
 #指定路径-创建数据库  切片-索引嵌入em-导入向量数据库  问题-切片-索引嵌入em-召回-检索
 
 # 获取当前脚本所在目录
@@ -13,7 +16,7 @@ knowledge_dir = os.path.join(script_dir, "knowledge")
 
 
 # 1. 加载嵌入模型
-embedder = SentenceTransformer('all-MiniLM-L6-v2')
+embedder = SentenceTransformer('all-mpnet-base-v2')
 
 # 2. 创建Chroma客户端
 client = chromadb.PersistentClient(path="./chroma_db")#创建本地向量数据库，路径为当前文件夹下./chroma_db，保存在磁盘PersistentClient

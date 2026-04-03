@@ -2,21 +2,33 @@ import os
 import chromadb
 from chromadb.utils import embedding_functions
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from logger_config import logger
+from document_loader import load_document 
 
 #索引函数
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-PROJECT_ROOT = os.path.dirname(BASE_DIR)
-DOCS_DIR = os.path.join(BASE_DIR, "knowledge")
-DB_PATH = os.path.join(PROJECT_ROOT, "chroma_db")
+#__file__ 是当前文件的绝对路径（例如 F:\AI_learning\first_agent\rag_tool.py）
+#os.path.dirname(...) 向上取目录，  得到 F:\AI_learning\first_agent。
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))  #所以BASE_DIR是first_agent项目目录
+
+#再取上一级目录，得到 F:\AI_learning（项目根目录）。
+PROJECT_ROOT = os.path.dirname(BASE_DIR)   #往上取一层目录AI_learning
+
+#拼接得到 F:\AI_learning\first_agent\knowledge,文档路径
+DOCS_DIR = os.path.join(BASE_DIR, "knowledge")   #把first_agent和knowledge拼起来
+
+#拼接得到 F:\AI_learning\chroma_db，即固定的数据库路径。
+DB_PATH = os.path.join(PROJECT_ROOT, "chroma_db")  #把AI_learning和chroma_db拼起来
+
+SUPPORTED_EXT = (".pdf", ".docx", ".pptx", ".md", ".txt")
 
 def build_knowledge_base(
     docs_path=DOCS_DIR,
     db_path=DB_PATH,
     collection_name="my_knowledge",
-    chunk_size=500,
-    chunk_overlap=50,
-    model_name='all-MiniLM-L6-v2'
+    chunk_size=350,
+    chunk_overlap=70,
+    model_name='BAAI/bge-small-zh-v1.5'
 ):
     """
     加载文档，切块，存入 Chroma 向量数据库。
@@ -26,21 +38,22 @@ def build_knowledge_base(
         print(f"错误：文档目录不存在：{docs_path}")
         return
 
-    # 2. 加载所有 .txt 文件
+    # 2. 加载各类型的所有文件
     texts = []
     metadatas = []
-    for filename in os.listdir(docs_path):
-        if not filename.endswith(".txt"):
+    for filename in os.listdir(DOCS_DIR):
+        ext = os.path.splitext(filename)[1].lower()
+        if ext not in SUPPORTED_EXT:
             continue
-        filepath = os.path.join(docs_path, filename)
-        with open(filepath, "r", encoding="utf-8") as f:
-            content = f.read()
-        # 切块
-        splitter = RecursiveCharacterTextSplitter(
-            chunk_size=chunk_size,
-            chunk_overlap=chunk_overlap,
-            separators=["\n\n", "\n", "。", " ", ""]
-        )
+        filepath = os.path.join(DOCS_DIR, filename)
+        try:
+            content = load_document(filepath)
+        except Exception as e:
+            print(f"读取文件失败 {filename}: {e}")
+            continue
+
+        # 切块（使用 LangChain 的文本分割器）
+        splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
         chunks = splitter.split_text(content)
         for i, chunk in enumerate(chunks):
             texts.append(chunk)

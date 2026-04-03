@@ -29,31 +29,36 @@ def parse_action_input(raw_input):
         except:
             return raw_input
 
-def react_agent(user_input: str, max_steps: int = 3):
+def react_agent(user_input: str, max_steps: int = 4):
 
     prompt = f"""你是一个智能助手，可以使用以下工具：
-   
-    - get_weather(city): 查询指定城市的实时天气。参数 city 为城市名（例如 "北京"、"上海"）。
-    - retrieve_documents(query): 从你的个人知识库中检索与 query 最相关的文档片段，用于回答需要私有知识的问题。例如，当用户问“我之前的笔记里怎么说的？”时，你应该调用这个工具。
-    
-    用户问题：{user_input}
-   
-    请严格按照以下格式回答，每一步都要输出 Thought、Action、Action Input，最后输出 Final Answer。注意 Action Input 必须是工具要求的参数格式（如城市名直接写，不要加引号或 JSON）。
-    示例：
-    用户：北京天气
-    Thought: 用户想查询北京的天气，我需要使用 get_weather 工具。
-    Action: get_weather
-    Action Input: 北京
-    Observation: 北京 当前天气：晴，温度 23℃
-    Thought: 我已经得到天气信息，可以回答用户了。
-    Final Answer: 北京 当前天气：晴，温度 23℃
 
-    现在请根据用户问题开始回答，不要输出 Observation 行，Observation 将由系统自动添加。
-    示例：
-    用户：北京天气
-    Thought: 用户想查询北京的天气，我需要使用 get_weather 工具。
-    Action: get_weather
-    Action Input: 北京
+1. get_weather(city)  
+   - 功能：查询指定城市的实时天气  
+   - 参数：城市名称（如“北京”）
+
+2. retrieve_documents(query)  
+   - 功能：从我的私人知识库中检索与问题相关的信息  
+   - 参数：搜索关键词或短语（如“毕业论文 系统架构”）
+
+用户问题：{user_input}
+
+请严格按照以下格式回答，不要输出任何额外解释：
+
+Thought: 你思考的过程（是否需要调用工具？调用哪个？）
+Action: 工具名称（必须是 get_weather 或 retrieve_documents，如果不需要工具则写 None）
+Action Input: 工具参数（如果 Action 为 None，则此处留空）
+Observation: 工具返回的结果（由系统自动填充，你不需要写这一行）
+（如果需要，重复 Thought/Action/Action Input，直到获得足够信息）
+Final Answer: 对用户问题的最终回答
+
+重要规则：
+- 如果用户问天气，必须调用 get_weather。
+- 如果用户问私人笔记、文档、毕业论文等私有知识，必须调用 retrieve_documents。
+- 如果用户问其他问题（如闲聊），Action 写 None，直接给出 Final Answer。
+- 不要自己编造 Observation，Observation 会由系统提供。
+- 每次只调用一个工具，观察结果后再决定下一步。
+- 最终答案应基于工具返回的真实数据，不要虚构。
 """
     
     for step in range(max_steps):
@@ -65,7 +70,7 @@ def react_agent(user_input: str, max_steps: int = 3):
                 return observation
             else:
                 return "模型未返回有效内容，请重试。"
-        logger.info(f'开始打印LLM输出 \nLLM 输出:\n{llm_output} \nLLM的输出打印结束 ')
+        #logger.info(f'开始打印LLM输出 \nLLM 输出:\n{llm_output} \nLLM的输出打印结束 ')
 
         if 'Final Answer:' in llm_output:
             return llm_output.split('Final Answer:')[-1].strip()
@@ -75,7 +80,7 @@ def react_agent(user_input: str, max_steps: int = 3):
         if action is None:
             return "错误：模型未指定动作。"
         if action not in tools:
-            logger.info(f'错误：未知工具 "{action}"，可用工具：{", ".join(tools.keys())}')
+            logger.error(f'错误：未知工具 "{action}"，可用工具：{", ".join(tools.keys())}')
         if action in tools:
             try:
                 observation = tools[action](action_input) 
@@ -83,8 +88,7 @@ def react_agent(user_input: str, max_steps: int = 3):
                 logger.error(f"工具 {action} 调用失败: {e}")
                 observation = f"工具调用失败：{str(e)}"
         prompt += f"\nObservation: {observation}\n"
-        prompt += "请根据上述观察结果，直接输出 Final Answer，不要再重复 Thought、Action 等步骤。\n"
-        logger.debug(f"更新后的提示词:\n{prompt}")
+        logger.error(f"更新后的提示词:\n{prompt}")
         logger.warning(f"达到最大步数 {max_steps}，最后 LLM 输出为:\n{llm_output}")
         continue  
     return '超过最大步数，未能得到最终答案。'
