@@ -68,3 +68,17 @@ markdown
 beautifulsoup4
 loguru
 tenacity
+streamlit
+openai
+python-dotenv
+requests
+chromadb
+sentence-transformers
+langchain-text-splitters
+pypdf
+python-docx
+python-pptx
+markdown
+beautifulsoup4
+loguru
+tenacity
