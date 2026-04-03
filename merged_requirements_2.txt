@@ -54,3 +54,17 @@ typer==0.24.1
 typing-inspection==0.4.2
 typing_extensions==4.15.0
 urllib3==2.6.3
+streamlit
+openai
+python-dotenv
+requests
+chromadb
+sentence-transformers
+langchain-text-splitters
+pypdf
+python-docx
+python-pptx
+markdown
+beautifulsoup4
+loguru
+tenacity
