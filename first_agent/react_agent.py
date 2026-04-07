@@ -2,9 +2,9 @@ import re
 from weather_tool import get_weather
 from azure_llm import call_llm
 from logger_config import logger
-from rag_tool import retrieve_documents
+from other_file.rag_tool import retrieve_documents
 import json
-from rag_tool import retrieve_documents
+from other_file.rag_tool import retrieve_documents
 
 
 tools = {

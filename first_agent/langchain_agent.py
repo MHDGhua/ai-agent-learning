@@ -30,5 +30,5 @@ agent = create_agent(
 )
 
 # 3. 执行 Agent
-result = agent.invoke({"messages": [{"role": "user", "content": "北京天气怎么样？"}]})
+result = agent.invoke({"messages": [{"role": "user", "content": "我的私有文档中，有一个项目计划书，他的名字是什么"}]})
 print(result["messages"][-1].content)
