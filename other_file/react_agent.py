@@ -1,7 +1,7 @@
 import re
-from weather_tool import get_weather
+from weather import get_weather
 from other_file.azure_llm import call_llm
-from logger_config import logger
+from logger import logger
 from other_file.rag_tool import retrieve_documents
 import json
 from other_file.rag_tool import retrieve_documents

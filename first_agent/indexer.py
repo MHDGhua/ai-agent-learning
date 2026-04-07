@@ -6,11 +6,15 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.document_loaders import DirectoryLoader, TextLoader, PyPDFLoader, UnstructuredMarkdownLoader
 from dotenv import load_dotenv
 
+# 在文件开头添加
+import os
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+KNOWLEDGE_DIR = os.path.join(SCRIPT_DIR, "knowledge")
+CHROMA_DB_PATH = os.path.join(os.path.dirname(SCRIPT_DIR), "chroma_db")  # 放在项目根目录
+EMBEDDING_MODEL = "BAAI/bge-small-zh-v1.5"
+
 load_dotenv()
 
-KNOWLEDGE_DIR = "knowledge"
-CHROMA_DB_PATH = "./chroma_db"
-EMBEDDING_MODEL = "BAAI/bge-small-zh-v1.5"
 
 # 定义文件扩展名到加载器的映射
 LOADER_MAPPING = {

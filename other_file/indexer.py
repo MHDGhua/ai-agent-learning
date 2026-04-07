@@ -2,7 +2,7 @@ import os
 import chromadb
 from chromadb.utils import embedding_functions
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from logger_config import logger
+from logger import logger
 from document_loader import load_document 
 
 #索引函数

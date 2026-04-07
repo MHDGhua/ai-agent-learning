@@ -78,3 +78,9 @@ agent.log
 
 # 临时依赖文件
 merged_requirements.txt
+
+chroma_db/
+legacy/
+__pycache__/
+*.log
+.env

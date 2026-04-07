@@ -1,6 +1,6 @@
 from langchain.tools import tool
-from weather_tool import get_weather
-from rag_retriever import retrieve_documents
+from weather import get_weather
+from retriever import retrieve_documents
 
 #把普通的python函数包装成框架中tool对象，易于识别
 
