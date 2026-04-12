@@ -1,0 +1,39 @@
+from typing import TypedDict
+from langgraph.graph import StateGraph, END
+
+class MyState(TypedDict):
+    input: str
+    processed: str
+
+def node_upper(state: MyState) -> dict:
+    return {"processed": state["input"].upper()}
+def node_reverse(state: MyState) -> dict:
+    return {"processed": state["processed"][::-1]}
+def should_reverse(state: MyState) -> str:
+    if len(state["processed"]) > 5:
+        return "reverse"
+    else:
+        return END
+
+builder = StateGraph(MyState)
+builder.add_node("to_upper", node_upper)
+builder.add_node("reverse", node_reverse)
+builder.set_entry_point("to_upper")
+builder.add_conditional_edges("to_upper", should_reverse, {
+    "reverse": "reverse",
+    END: END
+} )
+
+#条件函数中的参数-字典映射：目的是让返回值与节点名进行映射，解耦
+"""
+{
+    "返回值A": "目标节点A",   # 如果条件函数返回 "返回值A"，则去节点 "目标节点A"
+    "返回值B": "目标节点B",
+    END: END                 # 如果返回 END，则图结束
+}
+"""
+builder.add_edge("reverse", END) #边
+
+graph = builder.compile()
+result = graph.invoke({"input": "hello", "processed": ""})
+print(result)   # 因为 "HELLO" 长度 5，不满足 >5，所以直接结束，processed = "HELLO"
