@@ -371,7 +371,7 @@ class DocumentProcessor:
             "line_count": content.count("\n") + 1
         }
 
-def main():
+def main() -> None:
     """测试文档处理器"""
     import sys
     

@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta, timezone
-from typing import Dict, TypedDict
+from typing import Any, Dict, TypedDict
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 
@@ -78,7 +78,7 @@ def _set_session_cookie(response: Response, token: str) -> None:
 
 
 @router.post("/register", response_model=AuthResponse, status_code=status.HTTP_201_CREATED)
-async def register(request: RegisterRequest, response: Response):
+async def register(request: RegisterRequest, response: Response) -> AuthResponse:
     try:
         user, token = register_user(request.model_dump())
     except ValueError as exc:
@@ -89,7 +89,7 @@ async def register(request: RegisterRequest, response: Response):
 
 
 @router.post("/login", response_model=AuthResponse)
-async def login(request: LoginRequest, response: Response, http_request: Request):
+async def login(request: LoginRequest, response: Response, http_request: Request) -> AuthResponse:
     failure_key = _login_failure_key(http_request, request.email)
     if _is_login_limited(failure_key):
         raise HTTPException(status_code=429, detail="登录失败次数过多，请 15 分钟后再试。")
@@ -107,7 +107,11 @@ async def login(request: LoginRequest, response: Response, http_request: Request
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
-async def logout(request: Request, response: Response, user=Depends(get_current_user)):  # type: ignore[no-untyped-def]
+async def logout(
+    request: Request,
+    response: Response,
+    user: Dict[str, Any] | None = Depends(get_current_user),
+) -> None:
     token = request.cookies.get(SESSION_COOKIE_NAME, "")
     logout_user(token, user)
     response.delete_cookie(SESSION_COOKIE_NAME, path="/")
@@ -115,27 +119,27 @@ async def logout(request: Request, response: Response, user=Depends(get_current_
 
 
 @router.get("/me", response_model=AuthResponse)
-async def me(user=Depends(require_current_user)):  # type: ignore[no-untyped-def]
+async def me(user: Dict[str, Any] = Depends(require_current_user)) -> AuthResponse:
     return AuthResponse(user=UserResponse(**user))
 
 
 @router.get("/session", response_model=SessionResponse)
-async def session(user=Depends(get_current_user)):  # type: ignore[no-untyped-def]
+async def session(user: Dict[str, Any] | None = Depends(get_current_user)) -> SessionResponse:
     if user is None:
         return SessionResponse(user=None)
     return SessionResponse(user=UserResponse(**user))
 
 
 @router.get("/activity", response_model=ActivityListResponse)
-async def activity(user=Depends(require_current_user)):  # type: ignore[no-untyped-def]
+async def activity(user: Dict[str, Any] = Depends(require_current_user)) -> ActivityListResponse:
     return ActivityListResponse(items=list_workspace_activities(user["id"], limit=20))
 
 
 @router.put("/profile", response_model=AuthResponse)
 async def update_my_profile(
     request: ProfileUpdateRequest,
-    user=Depends(require_current_user),  # type: ignore[no-untyped-def]
-):
+    user: Dict[str, Any] = Depends(require_current_user),
+) -> AuthResponse:
     try:
         updated_user = update_profile(user["id"], request.model_dump())
     except ValueError as exc:
@@ -147,8 +151,8 @@ async def update_my_profile(
 async def change_password(
     request: PasswordChangeRequest,
     response: Response,
-    user=Depends(require_current_user),  # type: ignore[no-untyped-def]
-):
+    user: Dict[str, Any] = Depends(require_current_user),
+) -> AuthResponse:
     try:
         updated_user, token = update_password(
             user["id"],

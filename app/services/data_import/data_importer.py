@@ -21,11 +21,11 @@ class LocalTFIDFEmbeddingFunction:
         self.vectorizer = TfidfVectorizer(max_features=512)
         self.fitted = False
         
-    def name(self):
+    def name(self) -> str:
         """返回嵌入函数名称"""
         return "localtfidf"
     
-    def fit(self, documents: List[str]):
+    def fit(self, documents: List[str]) -> None:
         """训练TF-IDF模型"""
         self.vectorizer.fit(documents)
         self.fitted = True

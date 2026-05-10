@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
+from typing import Any, Dict
 
 from app.api.dependencies import require_current_user
 from app.schemas.workspace import (
@@ -23,12 +24,15 @@ router = APIRouter(prefix="/workspace", tags=["workspace"])
 
 
 @router.get("/cases", response_model=WorkspaceListResponse)
-async def get_cases(user=Depends(require_current_user)):  # type: ignore[no-untyped-def]
+async def get_cases(user: Dict[str, Any] = Depends(require_current_user)) -> WorkspaceListResponse:
     return WorkspaceListResponse(items=list_workspace_cases(user["id"]))
 
 
 @router.post("/cases", response_model=WorkspaceDetailResponse)
-async def upsert_case(request: WorkspaceSaveRequest, user=Depends(require_current_user)):  # type: ignore[no-untyped-def]
+async def upsert_case(
+    request: WorkspaceSaveRequest,
+    user: Dict[str, Any] = Depends(require_current_user),
+) -> WorkspaceDetailResponse:
     try:
         saved = save_workspace_case(user["id"], request.model_dump())
     except ValueError as exc:
@@ -37,7 +41,10 @@ async def upsert_case(request: WorkspaceSaveRequest, user=Depends(require_curren
 
 
 @router.get("/cases/{case_id}", response_model=WorkspaceDetailResponse)
-async def get_case_detail(case_id: int, user=Depends(require_current_user)):  # type: ignore[no-untyped-def]
+async def get_case_detail(
+    case_id: int,
+    user: Dict[str, Any] = Depends(require_current_user),
+) -> WorkspaceDetailResponse:
     case = get_workspace_case(user["id"], case_id)
     if case is None:
         raise HTTPException(status_code=404, detail="案件不存在。")
@@ -45,7 +52,7 @@ async def get_case_detail(case_id: int, user=Depends(require_current_user)):  # 
 
 
 @router.delete("/cases/{case_id}", status_code=204)
-async def remove_case(case_id: int, user=Depends(require_current_user)):  # type: ignore[no-untyped-def]
+async def remove_case(case_id: int, user: Dict[str, Any] = Depends(require_current_user)) -> None:
     deleted = remove_workspace_case(user["id"], case_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="案件不存在。")
@@ -54,16 +61,16 @@ async def remove_case(case_id: int, user=Depends(require_current_user)):  # type
 @router.get("/activities", response_model=ActivityListResponse)
 async def get_activity_feed(
     limit: int = Query(12, ge=1, le=50),
-    user=Depends(require_current_user),  # type: ignore[no-untyped-def]
-):
+    user: Dict[str, Any] = Depends(require_current_user),
+) -> ActivityListResponse:
     return ActivityListResponse(items=list_workspace_activities(user["id"], limit=limit))
 
 
 @router.post("/import-legacy", response_model=LegacyImportResponse)
 async def import_legacy(
     request: LegacyImportRequest,
-    user=Depends(require_current_user),  # type: ignore[no-untyped-def]
-):
+    user: Dict[str, Any] = Depends(require_current_user),
+) -> LegacyImportResponse:
     result = import_legacy_workspace(
         user["id"],
         history_entries=[item.model_dump() for item in request.history_entries],

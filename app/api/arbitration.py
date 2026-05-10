@@ -226,7 +226,7 @@ class PipelineTracker:
 
 @router.post("/analyze", response_model=CaseAnalysisResponse)
 @traceable_case("arbitration.analyze")
-async def analyze_case(request: CaseAnalysisRequest):
+async def analyze_case(request: CaseAnalysisRequest) -> CaseAnalysisResponse:
     """
     分析案件情况，提供风险评估、成本估算和成功率预测
     
@@ -384,7 +384,7 @@ async def _analyze_case_local(request: CaseAnalysisRequest) -> CaseAnalysisRespo
 
 @router.post("/generate-document", response_model=DocumentGenerationResponse)
 @traceable_case("arbitration.generate_document")
-async def generate_document(request: DocumentGenerationRequest):
+async def generate_document(request: DocumentGenerationRequest) -> DocumentGenerationResponse:
     """
     生成劳动仲裁文书
     
@@ -448,19 +448,19 @@ async def generate_document(request: DocumentGenerationRequest):
 
 @router.post("/validate-document", response_model=DocumentValidationResponse)
 @traceable_case("arbitration.validate_document")
-async def validate_document(request: DocumentValidationRequest):
+async def validate_document(request: DocumentValidationRequest) -> DocumentValidationResponse:
     """校验文书内容是否和案件信息一致。"""
     return _validate_document_content(request.document_type, request.case_data, request.content)
 
 
 @router.get("/observability/langsmith")
-async def get_langsmith_status():
+async def get_langsmith_status() -> Dict[str, Any]:
     """查看 LangSmith 追踪配置状态，不返回密钥。"""
     return langsmith_status()
 
 
 @router.post("/estimate-cost", response_model=ArbitrationCostEstimate)
-async def estimate_cost(request: CaseAnalysisRequest):
+async def estimate_cost(request: CaseAnalysisRequest) -> ArbitrationCostEstimate:
     """
     估算仲裁成本
     
@@ -503,7 +503,7 @@ async def estimate_cost(request: CaseAnalysisRequest):
 
 
 @router.post("/predict-success-rate", response_model=SuccessRatePrediction)
-async def predict_success_rate(request: CaseAnalysisRequest):
+async def predict_success_rate(request: CaseAnalysisRequest) -> SuccessRatePrediction:
     """
     预测仲裁成功率
     
@@ -549,7 +549,7 @@ async def predict_success_rate(request: CaseAnalysisRequest):
 
 
 @router.post("/calculate-claim", response_model=ClaimCalculationResponse)
-async def calculate_claim(request: ClaimCalculationRequest):
+async def calculate_claim(request: ClaimCalculationRequest) -> ClaimCalculationResponse:
     """
     计算常见劳动仲裁金额：经济补偿/违法解除赔偿、加班费、工伤一次性伤残补助金。
     """
@@ -598,7 +598,7 @@ async def calculate_claim(request: ClaimCalculationRequest):
 
 
 @router.post("/intake-checklist", response_model=IntakeChecklistResponse)
-async def intake_checklist(request: IntakeChecklistRequest):
+async def intake_checklist(request: IntakeChecklistRequest) -> IntakeChecklistResponse:
     """
     根据用户已有事实生成下一步信息补全清单。
     """
@@ -627,7 +627,7 @@ async def intake_checklist(request: IntakeChecklistRequest):
 async def local_references(
     query: str = Query(..., min_length=1),
     limit: int = Query(5, ge=1, le=10),
-):
+) -> LocalReferenceResponse:
     """查询重庆本地案例、指导意见和公开资料摘要。"""
     return LocalReferenceResponse(
         query=query,
@@ -637,7 +637,7 @@ async def local_references(
 
 @router.post("/workup", response_model=CaseWorkupResponse)
 @traceable_case("arbitration.workup")
-async def case_workup(request: CaseAnalysisRequest):
+async def case_workup(request: CaseAnalysisRequest) -> CaseWorkupResponse:
     """
     产品化综合研判：一次返回分析、补证、成本、成功率、本地参考和建议文书。
     """
@@ -729,7 +729,7 @@ async def case_workup(request: CaseAnalysisRequest):
 
 # 添加案例查询接口（如果需要）
 @router.get("/cases")
-async def get_case_examples():
+async def get_case_examples() -> Dict[str, Any]:
     """
     获取重庆地区劳动仲裁案例示例
     

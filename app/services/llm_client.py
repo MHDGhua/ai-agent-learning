@@ -31,7 +31,7 @@ def _is_configured_key(value: str) -> bool:
 class _LocalLLMFallback:
     """离线兜底：保证测试和基础演示可运行。"""
 
-    async def ainvoke(self, messages: List[Any]):
+    async def ainvoke(self, messages: List[Any]) -> Any:
         text = messages[-1].content if messages else ""
         return type("Resp", (), {"content": text})()
 
