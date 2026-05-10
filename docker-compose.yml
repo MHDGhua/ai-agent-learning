@@ -1,0 +1,57 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: lerap-app
+    restart: unless-stopped
+    env_file:
+      - .env.production
+    environment:
+      CHROMA_PERSIST_DIR: /app/data/chroma_db
+      PROCESSED_DATA_DIR: /app/data/processed_laborlaw
+      LERAP_SQLITE_PATH: /app/data/runtime/lerap_memory.db
+      LOG_FILE: /app/logs/lerap_pro.log
+    volumes:
+      - lerap_chroma:/app/data/chroma_db
+      - lerap_runtime:/app/data/runtime
+      - lerap_logs:/app/logs
+      - lerap_output:/app/output
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import os, urllib.request; req = urllib.request.Request('http://127.0.0.1:8000/healthz', headers={'Host': os.getenv('SERVER_NAME', 'localhost')}); urllib.request.urlopen(req, timeout=5)",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  caddy:
+    image: caddy:2.10-alpine
+    container_name: lerap-caddy
+    restart: unless-stopped
+    depends_on:
+      app:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+    env_file:
+      - .env.production
+    volumes:
+      - ./frontend:/srv/frontend:ro
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  lerap_chroma:
+  lerap_runtime:
+  lerap_logs:
+  lerap_output:
+  caddy_data:
+  caddy_config:

@@ -1,0 +1,2809 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>L-ERAP PRO | 重庆劳动仲裁助手</title>
+    <link rel="icon" href="data:,">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;800&family=Noto+Serif+SC:wght@600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <style>
+        * { box-sizing: border-box; }
+        [v-cloak] { display: none; }
+
+        :root {
+            --bg: #f6f1e7;
+            --bg-deep: #ece2d1;
+            --surface: rgba(255, 252, 247, 0.92);
+            --surface-strong: #fffdf8;
+            --surface-muted: rgba(245, 237, 223, 0.88);
+            --ink: #1d2430;
+            --ink-soft: #5f6877;
+            --ink-muted: #7b8494;
+            --line: rgba(73, 83, 102, 0.14);
+            --line-strong: rgba(47, 61, 84, 0.2);
+            --brand: #184a73;
+            --brand-strong: #0f3654;
+            --brand-soft: rgba(24, 74, 115, 0.08);
+            --accent: #b56a36;
+            --accent-soft: rgba(181, 106, 54, 0.12);
+            --good: #2a6a4c;
+            --good-soft: rgba(42, 106, 76, 0.12);
+            --warn: #a7671d;
+            --warn-soft: rgba(167, 103, 29, 0.14);
+            --danger: #b6453f;
+            --danger-soft: rgba(182, 69, 63, 0.12);
+            --shadow-lg: 0 28px 60px rgba(36, 47, 62, 0.12);
+            --shadow-md: 0 16px 32px rgba(36, 47, 62, 0.08);
+            --shadow-sm: 0 10px 24px rgba(36, 47, 62, 0.06);
+            --radius-xl: 28px;
+            --radius-lg: 22px;
+            --radius-md: 16px;
+            --radius-sm: 12px;
+            --page-max: 1680px;
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            color: var(--ink);
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+            background:
+                radial-gradient(circle at top left, rgba(24, 74, 115, 0.12), transparent 24%),
+                radial-gradient(circle at right 10% top 12%, rgba(181, 106, 54, 0.14), transparent 20%),
+                linear-gradient(180deg, #fbf7ee 0%, #f3ecdf 52%, #eee4d5 100%);
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            opacity: 0.42;
+            background-image:
+                linear-gradient(rgba(24, 74, 115, 0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(24, 74, 115, 0.04) 1px, transparent 1px);
+            background-size: 34px 34px;
+            mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.4), transparent 85%);
+        }
+
+        a {
+            color: var(--brand);
+            text-decoration: none;
+        }
+
+        a:hover { text-decoration: underline; }
+
+        button,
+        input,
+        textarea,
+        select {
+            font: inherit;
+        }
+
+        button {
+            cursor: pointer;
+            transition:
+                transform 180ms ease,
+                border-color 180ms ease,
+                background-color 180ms ease,
+                box-shadow 180ms ease,
+                color 180ms ease,
+                opacity 180ms ease;
+            touch-action: manipulation;
+        }
+
+        button:hover:not(:disabled) { transform: translateY(-1px); }
+        button:disabled { opacity: 0.56; cursor: not-allowed; transform: none; }
+
+        input,
+        textarea,
+        select {
+            width: 100%;
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            padding: 13px 14px;
+            background: rgba(255, 253, 248, 0.92);
+            color: var(--ink);
+            outline: none;
+        }
+
+        textarea {
+            min-height: 132px;
+            resize: vertical;
+            line-height: 1.74;
+        }
+
+        input:focus,
+        textarea:focus,
+        select:focus,
+        button:focus-visible,
+        .nav-item:focus-visible,
+        .chip-btn:focus-visible {
+            outline: 0;
+            border-color: rgba(24, 74, 115, 0.42);
+            box-shadow: 0 0 0 4px rgba(24, 74, 115, 0.12);
+        }
+
+        .skip-link {
+            position: absolute;
+            left: 16px;
+            top: -48px;
+            z-index: 1000;
+            padding: 10px 14px;
+            border-radius: 12px;
+            background: var(--brand);
+            color: #fff;
+        }
+
+        .skip-link:focus { top: 16px; }
+
+        .app-shell {
+            min-height: 100vh;
+            max-width: var(--page-max);
+            margin: 0 auto;
+            padding: 18px;
+            display: grid;
+            grid-template-columns: 288px minmax(0, 1fr) 368px;
+            gap: 18px;
+            position: relative;
+        }
+
+        .left-rail,
+        .main-stage,
+        .right-rail {
+            min-width: 0;
+        }
+
+        .left-rail {
+            position: sticky;
+            top: 18px;
+            align-self: start;
+            display: grid;
+            gap: 16px;
+        }
+
+        .rail-panel,
+        .card,
+        .hero-card,
+        .modal {
+            border: 1px solid rgba(59, 74, 97, 0.12);
+            background: var(--surface);
+            backdrop-filter: blur(18px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .rail-panel {
+            border-radius: var(--radius-xl);
+            padding: 20px;
+        }
+
+        .brand-panel {
+            background:
+                linear-gradient(135deg, rgba(15, 54, 84, 0.96), rgba(24, 74, 115, 0.92) 54%, rgba(181, 106, 54, 0.88));
+            color: #f8f6ef;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .brand-badge {
+            width: 52px;
+            height: 52px;
+            border-radius: 18px;
+            display: grid;
+            place-items: center;
+            background: rgba(255, 255, 255, 0.14);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            font-weight: 800;
+            letter-spacing: 0.08em;
+        }
+
+        .brand-head {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .brand-copy strong {
+            display: block;
+            font-family: "Noto Serif SC", "Songti SC", serif;
+            font-size: 20px;
+            line-height: 1.1;
+        }
+
+        .brand-copy span,
+        .brand-panel .soft {
+            color: rgba(248, 246, 239, 0.8);
+        }
+
+        .brand-panel p {
+            margin: 16px 0 0;
+            line-height: 1.7;
+        }
+
+        .nav-list,
+        .history-mini,
+        .bullet-list,
+        .metric-grid,
+        .result-grid,
+        .doc-grid,
+        .reference-list,
+        .history-list,
+        .settings-grid,
+        .info-grid,
+        .field-grid,
+        .stack,
+        .composer-actions,
+        .validation-groups,
+        .timeline-list,
+        .activity-list,
+        .hero-metrics,
+        .footer-tags,
+        .tab-row,
+        .doc-toolbar,
+        .chip-row {
+            display: grid;
+            gap: 12px;
+        }
+
+        .nav-item {
+            width: 100%;
+            border: 1px solid transparent;
+            border-radius: 20px;
+            padding: 14px 15px;
+            background: rgba(255, 252, 247, 0.86);
+            text-align: left;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .nav-item.active,
+        .nav-item:hover,
+        .mini-history-item:hover,
+        .chip-btn:hover,
+        .tab-btn.active,
+        .tab-btn:hover {
+            border-color: rgba(24, 74, 115, 0.18);
+            background: linear-gradient(180deg, rgba(24, 74, 115, 0.08), rgba(24, 74, 115, 0.03));
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
+        }
+
+        .nav-main {
+            display: flex;
+            gap: 12px;
+            min-width: 0;
+            align-items: center;
+        }
+
+        .nav-mark {
+            width: 34px;
+            height: 34px;
+            border-radius: 12px;
+            display: grid;
+            place-items: center;
+            background: var(--brand-soft);
+            color: var(--brand);
+            font-weight: 700;
+            flex: 0 0 auto;
+        }
+
+        .nav-copy {
+            min-width: 0;
+        }
+
+        .nav-copy strong,
+        .mini-history-item strong,
+        .metric-card strong,
+        .card h3,
+        .section-head strong,
+        .timeline-item strong,
+        .doc-preview-head strong,
+        .history-item strong,
+        .reference-item strong,
+        .account-head strong {
+            display: block;
+        }
+
+        .nav-copy span,
+        .mini-history-item span,
+        .soft,
+        .helper,
+        .text-note,
+        .list-note {
+            color: var(--ink-soft);
+            line-height: 1.66;
+        }
+
+        .nav-badge,
+        .status-pill,
+        .chip {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 28px;
+            padding: 0 12px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+        }
+
+        .nav-badge {
+            background: rgba(24, 74, 115, 0.1);
+            color: var(--brand);
+        }
+
+        .mini-history-item {
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            padding: 14px;
+            background: rgba(255, 252, 247, 0.7);
+            text-align: left;
+        }
+
+        .mini-history-item strong {
+            margin-bottom: 4px;
+        }
+
+        .account-panel {
+            display: grid;
+            gap: 14px;
+        }
+
+        .account-head {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 16px;
+            display: grid;
+            place-items: center;
+            background: linear-gradient(135deg, rgba(181, 106, 54, 0.18), rgba(24, 74, 115, 0.16));
+            color: var(--brand);
+            font-weight: 800;
+        }
+
+        .account-actions {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .btn {
+            min-height: 46px;
+            padding: 10px 16px;
+            border-radius: 999px;
+            border: 1px solid var(--line);
+            background: rgba(255, 252, 247, 0.9);
+            color: var(--ink);
+            font-weight: 700;
+        }
+
+        .btn.primary {
+            color: #fff8f1;
+            border-color: transparent;
+            background: linear-gradient(135deg, var(--brand), var(--brand-strong));
+            box-shadow: 0 16px 28px rgba(15, 54, 84, 0.24);
+        }
+
+        .btn.accent {
+            color: #fff;
+            border-color: transparent;
+            background: linear-gradient(135deg, #b56a36, #8d5229);
+            box-shadow: 0 14px 26px rgba(181, 106, 54, 0.22);
+        }
+
+        .btn.subtle { background: rgba(255, 252, 247, 0.7); }
+
+        .btn.danger {
+            color: var(--danger);
+            background: rgba(250, 240, 238, 0.94);
+            border-color: rgba(182, 69, 63, 0.18);
+        }
+
+        .icon-btn {
+            width: 46px;
+            height: 46px;
+            border-radius: 16px;
+            border: 1px solid var(--line);
+            background: rgba(255, 252, 247, 0.9);
+            display: none;
+            place-items: center;
+        }
+
+        .main-stage {
+            display: grid;
+            gap: 18px;
+            min-width: 0;
+        }
+
+        .main-header,
+        .session-shell,
+        .screen,
+        .right-rail {
+            min-width: 0;
+        }
+
+        .main-header {
+            position: sticky;
+            top: 18px;
+            z-index: 20;
+            border: 1px solid rgba(59, 74, 97, 0.12);
+            border-radius: var(--radius-xl);
+            background: rgba(255, 250, 244, 0.84);
+            backdrop-filter: blur(18px);
+            box-shadow: var(--shadow-sm);
+            padding: 22px 26px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 18px;
+        }
+
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--accent);
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+        }
+
+        .eyebrow::before {
+            content: "";
+            width: 28px;
+            height: 1px;
+            background: currentColor;
+            opacity: 0.55;
+        }
+
+        .main-header h1,
+        .hero-copy h2,
+        .screen-title {
+            margin: 8px 0 0;
+            font-family: "Noto Serif SC", "Songti SC", serif;
+            letter-spacing: -0.02em;
+        }
+
+        .main-header h1 { font-size: 34px; }
+
+        .main-header p,
+        .hero-copy p,
+        .card p,
+        .modal p {
+            margin: 10px 0 0;
+            color: var(--ink-soft);
+            line-height: 1.72;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .screen {
+            display: grid;
+            gap: 18px;
+        }
+
+        .hero-card {
+            border-radius: 34px;
+            padding: 26px;
+            background:
+                radial-gradient(circle at right top, rgba(181, 106, 54, 0.13), transparent 26%),
+                linear-gradient(180deg, rgba(255, 253, 248, 0.98), rgba(248, 241, 230, 0.96));
+        }
+
+        .hero-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.9fr);
+            gap: 18px;
+            align-items: start;
+        }
+
+        .hero-copy h2 {
+            font-size: 34px;
+            line-height: 1.22;
+        }
+
+        .hero-metrics {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .metric-card,
+        .guide-tile,
+        .result-card,
+        .doc-side-card,
+        .reference-item,
+        .history-item,
+        .settings-card {
+            border: 1px solid var(--line);
+            border-radius: 24px;
+            background: rgba(255, 252, 247, 0.76);
+            padding: 18px;
+        }
+
+        .metric-card span,
+        .metric-value,
+        .summary-big {
+            display: block;
+            margin-top: 10px;
+            font-size: 28px;
+            line-height: 1;
+            font-weight: 800;
+            color: var(--brand);
+        }
+
+        .tab-row {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+
+        .tab-btn {
+            min-height: 50px;
+            border-radius: 18px;
+            border: 1px solid var(--line);
+            background: rgba(255, 252, 247, 0.8);
+            font-weight: 700;
+            color: var(--ink-soft);
+        }
+
+        .tab-btn.active {
+            color: var(--brand);
+        }
+
+        .session-grid,
+        .analysis-grid,
+        .materials-grid,
+        .process-grid,
+        .doc-layout,
+        .settings-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.82fr);
+            gap: 18px;
+        }
+
+        .card {
+            border-radius: 30px;
+            padding: 22px;
+        }
+
+        .section-head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .section-head strong,
+        .screen-title {
+            font-size: 22px;
+            line-height: 1.25;
+        }
+
+        .message-list {
+            min-height: 360px;
+            max-height: 560px;
+            overflow: auto;
+            padding-right: 4px;
+            display: grid;
+            gap: 12px;
+            align-content: start;
+        }
+
+        .bubble {
+            max-width: 88%;
+            padding: 16px 18px;
+            border-radius: 24px;
+            line-height: 1.72;
+            white-space: pre-wrap;
+            position: relative;
+            animation: rise-in 220ms ease;
+        }
+
+        .bubble small {
+            display: block;
+            margin-bottom: 6px;
+            color: var(--ink-muted);
+            font-size: 12px;
+        }
+
+        .bubble.assistant {
+            background: linear-gradient(180deg, rgba(24, 74, 115, 0.08), rgba(24, 74, 115, 0.02));
+            border: 1px solid rgba(24, 74, 115, 0.12);
+        }
+
+        .bubble.user {
+            margin-left: auto;
+            background: linear-gradient(180deg, rgba(181, 106, 54, 0.14), rgba(181, 106, 54, 0.05));
+            border: 1px solid rgba(181, 106, 54, 0.14);
+        }
+
+        .composer {
+            margin-top: 18px;
+            display: grid;
+            gap: 12px;
+        }
+
+        .composer-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            flex-wrap: wrap;
+        }
+
+        .chip-row {
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        }
+
+        .chip-btn,
+        .chip {
+            border: 1px solid rgba(24, 74, 115, 0.14);
+            border-radius: 999px;
+            background: rgba(255, 252, 247, 0.86);
+            color: var(--brand);
+            min-height: 44px;
+            padding: 0 14px;
+            font-weight: 700;
+            text-align: left;
+            justify-content: flex-start;
+        }
+
+        .chip {
+            display: inline-flex;
+            min-height: 32px;
+            padding: 0 12px;
+            font-size: 12px;
+        }
+
+        .guide-grid,
+        .result-grid,
+        .doc-grid,
+        .settings-grid,
+        .field-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .guide-tile h3,
+        .result-card h3,
+        .settings-card h3 {
+            margin: 0;
+            font-size: 18px;
+        }
+
+        .guide-tile p,
+        .result-card p,
+        .settings-card p,
+        .reference-item p,
+        .history-item p {
+            margin: 10px 0 0;
+        }
+
+        .bullet-list,
+        .ordered-list {
+            padding-left: 18px;
+            margin: 0;
+        }
+
+        .bullet-list li,
+        .ordered-list li {
+            margin: 0;
+            line-height: 1.74;
+            color: var(--ink-soft);
+        }
+
+        .notice {
+            padding: 14px 16px;
+            border-radius: 18px;
+            border: 1px solid var(--line);
+            background: rgba(255, 252, 247, 0.82);
+            line-height: 1.68;
+        }
+
+        .notice.warn {
+            border-color: rgba(167, 103, 29, 0.18);
+            background: var(--warn-soft);
+            color: #7c4b14;
+        }
+
+        .notice.good {
+            border-color: rgba(42, 106, 76, 0.18);
+            background: var(--good-soft);
+            color: #24533d;
+        }
+
+        .notice.error {
+            border-color: rgba(182, 69, 63, 0.22);
+            background: var(--danger-soft);
+            color: #8e312d;
+        }
+
+        .status-pill.good,
+        .status-chip.good {
+            color: var(--good);
+            background: var(--good-soft);
+        }
+
+        .status-pill.warn,
+        .status-chip.warn {
+            color: #7c4b14;
+            background: var(--warn-soft);
+        }
+
+        .status-pill.risk,
+        .status-chip.risk {
+            color: var(--danger);
+            background: var(--danger-soft);
+        }
+
+        .status-pill.brand {
+            color: var(--brand);
+            background: var(--brand-soft);
+        }
+
+        .summary-lines {
+            display: grid;
+            gap: 10px;
+        }
+
+        .summary-line {
+            border-top: 1px solid var(--line);
+            padding-top: 10px;
+            line-height: 1.68;
+            color: var(--ink-soft);
+        }
+
+        .progress {
+            width: 100%;
+            height: 10px;
+            border-radius: 999px;
+            background: rgba(24, 74, 115, 0.08);
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            border-radius: inherit;
+            background: linear-gradient(90deg, var(--brand), var(--accent));
+        }
+
+        .meta-grid,
+        .kv-grid {
+            display: grid;
+            gap: 10px;
+        }
+
+        .meta-item,
+        .kv-item {
+            border-top: 1px solid var(--line);
+            padding-top: 10px;
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            align-items: flex-start;
+        }
+
+        .meta-item span,
+        .kv-item span {
+            color: var(--ink-muted);
+        }
+
+        .meta-item b,
+        .kv-item b {
+            text-align: right;
+            font-weight: 700;
+        }
+
+        .empty-state {
+            border: 1px dashed rgba(24, 74, 115, 0.18);
+            border-radius: 26px;
+            padding: 28px 22px;
+            background: rgba(255, 252, 247, 0.5);
+            color: var(--ink-soft);
+            line-height: 1.72;
+            text-align: center;
+        }
+
+        .doc-layout {
+            align-items: start;
+        }
+
+        .doc-toolbar {
+            grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+        }
+
+        .doc-preview {
+            min-height: 560px;
+            padding: 22px;
+            margin: 0;
+            border-radius: 24px;
+            background: rgba(255, 253, 249, 0.96);
+            border: 1px solid var(--line);
+            font-family: "Noto Serif SC", "Songti SC", serif;
+            line-height: 1.9;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .timeline-list {
+            gap: 14px;
+        }
+
+        .timeline-item {
+            display: grid;
+            grid-template-columns: 52px minmax(0, 1fr);
+            gap: 14px;
+            align-items: start;
+        }
+
+        .timeline-mark {
+            width: 52px;
+            height: 52px;
+            border-radius: 18px;
+            display: grid;
+            place-items: center;
+            font-weight: 800;
+            background: rgba(24, 74, 115, 0.08);
+            color: var(--brand);
+            border: 1px solid rgba(24, 74, 115, 0.14);
+        }
+
+        .timeline-mark.warn {
+            background: var(--warn-soft);
+            color: #7c4b14;
+            border-color: rgba(167, 103, 29, 0.18);
+        }
+
+        .timeline-mark.good {
+            background: var(--good-soft);
+            color: var(--good);
+            border-color: rgba(42, 106, 76, 0.18);
+        }
+
+        .history-item,
+        .reference-item {
+            display: grid;
+            gap: 10px;
+        }
+
+        .history-actions,
+        .footer-tags,
+        .doc-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .settings-grid {
+            align-items: start;
+        }
+
+        .toggle-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 14px 0;
+            border-top: 1px solid var(--line);
+        }
+
+        .toggle-row:first-child {
+            padding-top: 0;
+            border-top: 0;
+        }
+
+        .switch {
+            position: relative;
+            width: 56px;
+            height: 32px;
+            flex: 0 0 auto;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+            position: absolute;
+        }
+
+        .switch span {
+            position: absolute;
+            inset: 0;
+            border-radius: 999px;
+            background: rgba(24, 74, 115, 0.12);
+            transition: background-color 180ms ease;
+        }
+
+        .switch span::after {
+            content: "";
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #fff;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+            transition: transform 180ms ease;
+        }
+
+        .switch input:checked + span {
+            background: rgba(24, 74, 115, 0.34);
+        }
+
+        .switch input:checked + span::after {
+            transform: translateX(24px);
+        }
+
+        .right-rail {
+            position: sticky;
+            top: 18px;
+            align-self: start;
+            display: grid;
+            gap: 16px;
+        }
+
+        .field {
+            display: grid;
+            gap: 8px;
+        }
+
+        .field label {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--ink-soft);
+        }
+
+        .check-inline {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--ink-soft);
+        }
+
+        .check-inline input {
+            width: 18px;
+            height: 18px;
+            margin: 0;
+            accent-color: var(--brand);
+        }
+
+        .overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 60;
+            background: rgba(24, 32, 44, 0.38);
+            backdrop-filter: blur(10px);
+            display: grid;
+            place-items: center;
+            padding: 16px;
+        }
+
+        .modal {
+            width: min(680px, 100%);
+            border-radius: 32px;
+            padding: 28px;
+            background: rgba(255, 252, 247, 0.98);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .modal-actions {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .sidebar-backdrop {
+            display: none;
+        }
+
+        .compact-mode .card,
+        .compact-mode .rail-panel,
+        .compact-mode .hero-card,
+        .compact-mode .main-header {
+            padding: 18px;
+        }
+
+        .compact-mode .bubble {
+            padding: 14px 16px;
+        }
+
+        .page-enter-active,
+        .page-leave-active {
+            transition: opacity 220ms ease, transform 220ms ease;
+        }
+
+        .page-enter-from,
+        .page-leave-to {
+            opacity: 0;
+            transform: translateY(8px);
+        }
+
+        .mobile-nav {
+            display: none;
+            gap: 10px;
+            overflow: auto;
+            padding-bottom: 2px;
+        }
+
+        .mobile-nav button {
+            min-width: max-content;
+        }
+
+        @keyframes rise-in {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 1320px) {
+            .app-shell {
+                grid-template-columns: 272px minmax(0, 1fr);
+            }
+
+            .right-rail {
+                position: static;
+                grid-column: 1 / -1;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 1024px) {
+            .app-shell {
+                grid-template-columns: 1fr;
+            }
+
+            .left-rail {
+                position: fixed;
+                top: 0;
+                left: 0;
+                bottom: 0;
+                width: min(88vw, 320px);
+                padding: 18px;
+                background: #f6efe3;
+                z-index: 80;
+                transform: translateX(-108%);
+                transition: transform 220ms ease;
+                overflow: auto;
+            }
+
+            .app-shell.sidebar-open .left-rail {
+                transform: translateX(0);
+            }
+
+            .sidebar-backdrop {
+                position: fixed;
+                inset: 0;
+                z-index: 70;
+                display: block;
+                background: rgba(24, 32, 44, 0.32);
+            }
+
+            .main-header {
+                top: 12px;
+            }
+
+            .icon-btn {
+                display: grid;
+            }
+
+            .hero-layout,
+            .session-grid,
+            .analysis-grid,
+            .materials-grid,
+            .process-grid,
+            .doc-layout,
+            .settings-grid,
+            .right-rail,
+            .field-grid,
+            .guide-grid,
+            .result-grid,
+            .doc-grid,
+            .hero-metrics,
+            .tab-row {
+                grid-template-columns: 1fr;
+            }
+
+            .mobile-nav {
+                display: flex;
+            }
+        }
+
+        @media (max-width: 720px) {
+            .app-shell {
+                padding: 10px;
+            }
+
+            .main-header {
+                padding: 18px;
+            }
+
+            .main-header h1,
+            .hero-copy h2 {
+                font-size: 28px;
+            }
+
+            .header-actions,
+            .composer-row,
+            .history-actions,
+            .modal-actions,
+            .doc-actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .btn,
+            .chip-btn,
+            .tab-btn {
+                min-height: 48px;
+            }
+
+            .message-list {
+                min-height: 300px;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            html { scroll-behavior: auto; }
+            *,
+            *::before,
+            *::after {
+                animation: none !important;
+                transition-duration: 0ms !important;
+                scroll-behavior: auto !important;
+            }
+        }
+    </style>
+</head>
+<body>
+<a class="skip-link" href="#main-stage">跳到主内容</a>
+<div id="app" v-cloak>
+    <div :class="['app-shell', { 'sidebar-open': sidebarOpen, 'compact-mode': settings.compactMode }]">
+        <aside class="left-rail" aria-label="主导航">
+            <section class="rail-panel brand-panel">
+                <div class="brand-head">
+                    <div class="brand-badge">L+</div>
+                    <div class="brand-copy">
+                        <strong>L-ERAP PRO</strong>
+                        <span>重庆劳动仲裁助手</span>
+                    </div>
+                </div>
+                <p>不再是后台工作台。这里把复杂的法律准备过程，收成普通劳动者能一步步完成的接待、整理、文书和参考。</p>
+            </section>
+
+            <section class="rail-panel">
+                <div class="section-head">
+                    <div>
+                        <div class="eyebrow">主入口</div>
+                        <strong>当前案件</strong>
+                    </div>
+                </div>
+                <div class="stack">
+                    <button class="btn primary" @click="newWorkspace">开始新案件</button>
+                    <div class="nav-list">
+                        <button
+                            v-for="item in navigation"
+                            :key="item.key"
+                            class="nav-item"
+                            :class="{ active: currentView === item.key }"
+                            :aria-current="currentView === item.key ? 'page' : false"
+                            @click="openView(item.key)">
+                            <span class="nav-main">
+                                <span class="nav-mark">{{ item.mark }}</span>
+                                <span class="nav-copy">
+                                    <strong>{{ item.label }}</strong>
+                                    <span>{{ item.note }}</span>
+                                </span>
+                            </span>
+                            <span v-if="item.badge" class="nav-badge">{{ item.badge }}</span>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <section class="rail-panel">
+                <div class="section-head">
+                    <div>
+                        <div class="eyebrow">最近记录</div>
+                        <strong>可恢复案件</strong>
+                    </div>
+                </div>
+                <div class="history-mini">
+                    <button
+                        v-for="entry in historyEntries.slice(0, 3)"
+                        :key="entry.id"
+                        class="mini-history-item"
+                        @click="restoreHistory(entry)">
+                        <strong>{{ entry.title }}</strong>
+                        <span>{{ entry.time }}</span>
+                    </button>
+                    <div v-if="!historyEntries.length" class="text-note">当前还没有本地快照。完成一次案情整理后会自动出现。</div>
+                </div>
+            </section>
+
+            <section class="rail-panel account-panel">
+                <div class="account-head">
+                    <div class="avatar">{{ userInitial }}</div>
+                    <div>
+                        <strong>{{ loggedIn ? profile.name : '访客模式' }}</strong>
+                        <div class="soft">{{ loggedIn ? (profile.role || '案件申请人') : '信息只保存在当前浏览器' }}</div>
+                    </div>
+                </div>
+                <div class="account-actions">
+                    <button class="btn subtle" @click="showAuthPanel = true">{{ loggedIn ? '修改身份' : '填写身份' }}</button>
+                    <button v-if="loggedIn" class="btn danger" @click="logout">退出本地身份</button>
+                </div>
+            </section>
+        </aside>
+
+        <button v-if="sidebarOpen" class="sidebar-backdrop" aria-label="关闭菜单" @click="sidebarOpen = false"></button>
+
+        <main id="main-stage" class="main-stage">
+            <header class="main-header">
+                <div>
+                    <div class="eyebrow">{{ currentMeta.kicker }}</div>
+                    <h1>{{ currentMeta.title }}</h1>
+                    <p>{{ currentMeta.lead }}</p>
+                </div>
+                <div class="header-actions">
+                    <button class="icon-btn" aria-label="打开导航" @click="sidebarOpen = !sidebarOpen">≡</button>
+                    <button class="btn subtle" @click="openView('history')">历史记录</button>
+                    <button class="btn accent" :disabled="loading || !caseForm.facts.trim()" @click="generateDocument()">生成文书</button>
+                    <button class="btn primary" :disabled="loading || !caseForm.facts.trim()" @click="runAnalysis()">{{ loading ? '整理中...' : '开始整理案情' }}</button>
+                </div>
+            </header>
+
+            <div class="mobile-nav">
+                <button
+                    v-for="item in navigation"
+                    :key="`mobile-${item.key}`"
+                    class="chip-btn"
+                    @click="openView(item.key)">
+                    {{ item.label }}
+                </button>
+            </div>
+
+            <transition name="page" mode="out-in">
+                <section v-if="currentView === 'session'" key="session" class="screen">
+                    <article class="hero-card">
+                        <div class="hero-layout">
+                            <div class="hero-copy">
+                                <div class="eyebrow">智能接待</div>
+                                <h2>先把案情说清楚，再逐步拿回你需要的材料和方向。</h2>
+                                <p>你只需要用自然语言描述发生了什么、公司怎么做、你手里有什么材料。系统会自动判断案件类型、提醒时效和管辖、拆出诉求、整理证据，并给出适合继续推进的文书。</p>
+                            </div>
+                            <div class="hero-metrics">
+                                <article class="metric-card" v-for="metric in heroMetrics" :key="metric.label">
+                                    <strong>{{ metric.label }}</strong>
+                                    <span>{{ metric.value }}</span>
+                                    <div class="soft">{{ metric.note }}</div>
+                                </article>
+                            </div>
+                        </div>
+                    </article>
+
+                    <div class="tab-row" role="tablist" aria-label="案件视图">
+                        <button class="tab-btn" :class="{ active: activeWorkspaceTab === 'chat' }" @click="activeWorkspaceTab = 'chat'">说案情</button>
+                        <button class="tab-btn" :class="{ active: activeWorkspaceTab === 'analysis' }" @click="activeWorkspaceTab = 'analysis'">看结论</button>
+                        <button class="tab-btn" :class="{ active: activeWorkspaceTab === 'materials' }" @click="activeWorkspaceTab = 'materials'">整理材料</button>
+                        <button class="tab-btn" :class="{ active: activeWorkspaceTab === 'process' }" @click="activeWorkspaceTab = 'process'">推进进度</button>
+                    </div>
+
+                    <div v-if="activeWorkspaceTab === 'chat'" class="session-grid">
+                        <section class="card">
+                            <div class="section-head">
+                                <div>
+                                    <div class="eyebrow">对话区</div>
+                                    <strong>把经过直接告诉我</strong>
+                                </div>
+                                <span class="status-pill brand">在线整理</span>
+                            </div>
+                            <div class="message-list" ref="messages" aria-live="polite">
+                                <div class="bubble" :class="message.role" v-for="message in messages" :key="message.id">
+                                    <small>{{ message.role === 'assistant' ? '助手' : '你' }}</small>
+                                    <div>{{ message.text }}</div>
+                                </div>
+                            </div>
+                            <div v-if="errorMessage" class="notice error" role="alert">{{ errorMessage }}</div>
+                            <div v-if="quickQuestions.length" class="chip-row">
+                                <button class="chip-btn" v-for="question in quickQuestions" :key="question" @click="useQuickQuestion(question)">
+                                    {{ question }}
+                                </button>
+                            </div>
+                            <form class="composer" @submit.prevent="sendMessage">
+                                <div class="field">
+                                    <label for="case-input">案情描述</label>
+                                    <textarea id="case-input" v-model="chatInput" placeholder="直接说发生了什么、公司怎么做、你手里有什么材料。"></textarea>
+                                </div>
+                                <div class="composer-row">
+                                    <div class="helper">优先说明：入职时间、月工资、争议发生时间、公司行为、你现有的证据名称。</div>
+                                    <div class="doc-actions">
+                                        <input ref="fileInput" type="file" hidden multiple @change="handleFiles">
+                                        <button type="button" class="btn subtle" @click="$refs.fileInput.click()">添加材料名称</button>
+                                        <button type="submit" class="btn primary" :disabled="loading || !chatInput.trim()">{{ loading ? '整理中...' : '发送并整理' }}</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </section>
+
+                        <section class="card">
+                            <div class="section-head">
+                                <div>
+                                    <div class="eyebrow">界面策略</div>
+                                    <strong>这次界面只保留用户真正会用的内容</strong>
+                                </div>
+                            </div>
+                            <div class="guide-grid">
+                                <article class="guide-tile">
+                                    <h3>先说事实</h3>
+                                    <p>不再先让用户看复杂面板。主区域先承接自然语言输入，降低第一次使用成本。</p>
+                                </article>
+                                <article class="guide-tile">
+                                    <h3>结论先给重点</h3>
+                                    <p>分析结果优先显示能不能继续、还差什么、该先做哪一步，而不是内部流程或模型细节。</p>
+                                </article>
+                                <article class="guide-tile">
+                                    <h3>材料集中整理</h3>
+                                    <p>证据、诉求、文书放在后续视图，用户需要时再进入，不压在首屏干扰输入。</p>
+                                </article>
+                                <article class="guide-tile">
+                                    <h3>风险换成人话</h3>
+                                    <p>系统内部对抗、规则和流水线状态不直接暴露，前台只显示“公司可能怎么说”和“你该补什么”。</p>
+                                </article>
+                            </div>
+                            <div class="notice">
+                                本助手只提供劳动仲裁材料准备信息和风险提示，不构成正式法律意见。涉及重大金额、工伤、时效或解除合法性，请再做专业复核。
+                            </div>
+                        </section>
+                    </div>
+
+                    <div v-else-if="activeWorkspaceTab === 'analysis'" class="analysis-grid">
+                        <template v-if="workupResult">
+                            <section class="card">
+                                <div class="section-head">
+                                    <div>
+                                        <div class="eyebrow">结果摘要</div>
+                                        <strong>{{ primaryFinding }}</strong>
+                                    </div>
+                                    <span :class="['status-pill', statusTone]">{{ readinessText }}</span>
+                                </div>
+                                <div class="result-grid">
+                                    <article class="result-card">
+                                        <h3>下一步先做什么</h3>
+                                        <p>{{ nextBestAction }}</p>
+                                    </article>
+                                    <article class="result-card">
+                                        <h3>大概把握</h3>
+                                        <p>{{ probabilityRange }}</p>
+                                    </article>
+                                    <article class="result-card">
+                                        <h3>重庆能不能处理</h3>
+                                        <p>{{ plainJurisdiction }}</p>
+                                    </article>
+                                    <article class="result-card">
+                                        <h3>推荐文书</h3>
+                                        <p>{{ suggestedDocumentText }}</p>
+                                    </article>
+                                </div>
+                            </section>
+
+                            <section class="card">
+                                <div class="section-head">
+                                    <div>
+                                        <div class="eyebrow">重点提醒</div>
+                                        <strong>系统已经替你压缩成几件最关键的事</strong>
+                                    </div>
+                                </div>
+                                <div class="stack">
+                                    <div class="notice warn" v-if="warningsText">{{ warningsText }}</div>
+                                    <div class="notice good" v-else>当前没有明显高优先级警告，可以继续整理诉求和材料。</div>
+                                    <div class="bullet-list" v-if="recommendations.length">
+                                        <li v-for="item in recommendations.slice(0, 6)" :key="item">{{ item }}</li>
+                                    </div>
+                                    <div class="notice">{{ opponentSummary }}</div>
+                                </div>
+                            </section>
+                        </template>
+                        <div v-else class="empty-state">先在“说案情”里描述你的情况，系统整理后，这里会显示用人单位可能的回应、时效提醒和下一步。</div>
+                    </div>
+
+                    <div v-else-if="activeWorkspaceTab === 'materials'" class="materials-grid">
+                        <template v-if="workupResult">
+                            <section class="card">
+                                <div class="section-head">
+                                    <div>
+                                        <div class="eyebrow">证据与诉求</div>
+                                        <strong>你现在可以拿着这些清单继续准备</strong>
+                                    </div>
+                                </div>
+                                <div class="doc-grid">
+                                    <article class="result-card">
+                                        <h3>可主张项目</h3>
+                                        <ol class="ordered-list" v-if="claimItems.length">
+                                            <li v-for="item in claimItems.slice(0, 8)" :key="item.name + item.calculation">
+                                                {{ item.name }}：{{ item.calculation }}
+                                            </li>
+                                        </ol>
+                                        <p v-else>整理完成后会自动拆出诉求项目。</p>
+                                    </article>
+                                    <article class="result-card">
+                                        <h3>证据清单</h3>
+                                        <ol class="ordered-list" v-if="flatEvidenceChecklist.length">
+                                            <li v-for="item in flatEvidenceChecklist.slice(0, 10)" :key="item">{{ item }}</li>
+                                        </ol>
+                                        <p v-else>当前还没有可展示的证据分类，先补充已有材料名称。</p>
+                                    </article>
+                                    <article class="result-card">
+                                        <h3>还缺哪些信息</h3>
+                                        <ol class="ordered-list" v-if="missingQuestions.length">
+                                            <li v-for="item in missingQuestions.slice(0, 8)" :key="item">{{ item }}</li>
+                                        </ol>
+                                        <p v-else>关键信息目前较完整，可以继续生成文书。</p>
+                                    </article>
+                                    <article class="result-card">
+                                        <h3>你已录入的材料</h3>
+                                        <div class="footer-tags" v-if="allEvidenceItems.length || uploadedFiles.length">
+                                            <span class="chip" v-for="item in allEvidenceItems" :key="item">{{ item }}</span>
+                                        </div>
+                                        <p v-else>还没有录入材料名称。</p>
+                                    </article>
+                                </div>
+                            </section>
+
+                            <section class="card">
+                                <div class="section-head">
+                                    <div>
+                                        <div class="eyebrow">行动顺序</div>
+                                        <strong>先补证，再出文书</strong>
+                                    </div>
+                                </div>
+                                <ol class="ordered-list" v-if="actionChecklist.length">
+                                    <li v-for="item in actionChecklist.slice(0, 10)" :key="item">{{ item }}</li>
+                                </ol>
+                                <div v-else class="notice">整理完成后，系统会把下一步动作按优先级列出来。</div>
+                            </section>
+                        </template>
+                        <div v-else class="empty-state">还没有案件结果。先整理案情，再回来集中看证据、诉求和待补信息。</div>
+                    </div>
+
+                    <div v-else class="process-grid">
+                        <template v-if="workupResult">
+                            <section class="card">
+                                <div class="section-head">
+                                    <div>
+                                        <div class="eyebrow">推进进度</div>
+                                        <strong>系统已经帮你推进到哪一步</strong>
+                                    </div>
+                                </div>
+                                <div class="timeline-list">
+                                    <article class="timeline-item" v-for="(step, index) in processCards" :key="step.label + index">
+                                        <div :class="['timeline-mark', step.tone]">{{ index + 1 }}</div>
+                                        <div>
+                                            <strong>{{ step.label }}</strong>
+                                            <div class="soft">{{ step.detail }}</div>
+                                        </div>
+                                    </article>
+                                </div>
+                            </section>
+
+                            <section class="card">
+                                <div class="section-head">
+                                    <div>
+                                        <div class="eyebrow">本地记录</div>
+                                        <strong>当前案件留下的动作轨迹</strong>
+                                    </div>
+                                </div>
+                                <div class="activity-list" v-if="activities.length">
+                                    <article class="result-card" v-for="item in activities.slice(0, 6)" :key="item.id">
+                                        <h3>{{ item.title }}</h3>
+                                        <p>{{ item.detail }}</p>
+                                        <div class="soft">{{ item.time }}</div>
+                                    </article>
+                                </div>
+                                <div v-else class="notice">当前还没有本地动作记录。</div>
+                            </section>
+                        </template>
+                        <div v-else class="empty-state">先整理案情，系统才会形成阶段进度和动作轨迹。</div>
+                    </div>
+                </section>
+
+                <section v-else-if="currentView === 'documents'" key="documents" class="screen">
+                    <article class="hero-card">
+                        <div class="hero-layout">
+                            <div class="hero-copy">
+                                <div class="eyebrow">文书中心</div>
+                                <h2>把结构化结果直接转成可校验、可导出的文书草稿。</h2>
+                                <p>这里不再像后台表单，而是把生成、校验、导出收成一条线。先用当前案件生成草稿，再检查字段一致性，最后导出给你继续修改。</p>
+                            </div>
+                            <div class="hero-metrics">
+                                <article class="metric-card">
+                                    <strong>当前文书</strong>
+                                    <span>{{ documentType }}</span>
+                                    <div class="soft">可随时切换类型重新生成。</div>
+                                </article>
+                                <article class="metric-card">
+                                    <strong>校验状态</strong>
+                                    <span>{{ documentValidation ? (documentValidation.is_valid ? '通过' : '待修正') : '未校验' }}</span>
+                                    <div class="soft">先看姓名、金额、证据和法条是否一致。</div>
+                                </article>
+                            </div>
+                        </div>
+                    </article>
+
+                    <div class="doc-layout">
+                        <section class="card">
+                            <div class="section-head">
+                                <div>
+                                    <div class="eyebrow">操作</div>
+                                    <strong>文书处理</strong>
+                                </div>
+                            </div>
+                            <div class="doc-toolbar">
+                                <div class="field">
+                                    <label for="document-type">文书类型</label>
+                                    <select id="document-type" v-model="documentType">
+                                        <option>仲裁申请书</option>
+                                        <option>证据清单</option>
+                                        <option>庭前调解申请书</option>
+                                    </select>
+                                </div>
+                                <button class="btn primary" :disabled="loading || !caseForm.facts.trim()" @click="generateDocument()">{{ loading ? '生成中...' : '重新生成草稿' }}</button>
+                                <button class="btn subtle" :disabled="!documentResult" @click="validateDocument()">校验草稿</button>
+                                <button class="btn subtle" :disabled="!documentResult" @click="exportDocumentWord">导出 Word</button>
+                                <button class="btn subtle" :disabled="!documentResult" @click="exportDocumentPdf">打印 / 另存为 PDF</button>
+                            </div>
+                            <div v-if="errorMessage" class="notice error" role="alert">{{ errorMessage }}</div>
+                            <div v-if="documentResult" class="stack">
+                                <div class="notice good">{{ documentResult.advice || '草稿已生成，可先看内容，再做校验。' }}</div>
+                                <pre class="doc-preview">{{ documentResult.content }}</pre>
+                            </div>
+                            <div v-else class="empty-state">先整理案情，再在这里生成文书草稿。系统会优先推荐最适合当前案件的文书类型。</div>
+                        </section>
+
+                        <section class="card">
+                            <div class="section-head">
+                                <div>
+                                    <div class="eyebrow">辅助信息</div>
+                                    <strong>校验与推荐</strong>
+                                </div>
+                            </div>
+                            <div class="stack">
+                                <article class="doc-side-card">
+                                    <h3>推荐文书</h3>
+                                    <p>{{ suggestedDocumentText }}</p>
+                                    <div class="soft">默认优先：{{ preferredDocType }}</div>
+                                </article>
+                                <article class="doc-side-card">
+                                    <h3>校验概览</h3>
+                                    <p>{{ validationSummary || '生成草稿后，可在这里看字段一致性和修正建议。' }}</p>
+                                </article>
+                                <div class="validation-groups" v-if="documentValidationGroups.length">
+                                    <article class="doc-side-card" v-for="group in documentValidationGroups" :key="group.label">
+                                        <h3>{{ group.label }}</h3>
+                                        <ul class="bullet-list">
+                                            <li v-for="item in group.items" :key="item">{{ item }}</li>
+                                        </ul>
+                                    </article>
+                                </div>
+                                <div v-else class="notice">校验结果会在这里按“必须改 / 建议看 / 可以补充”分组展示。</div>
+                            </div>
+                        </section>
+                    </div>
+                </section>
+
+                <section v-else-if="currentView === 'references'" key="references" class="screen">
+                    <article class="hero-card">
+                        <div class="hero-layout">
+                            <div class="hero-copy">
+                                <div class="eyebrow">重庆参考</div>
+                                <h2>只展示和当前案件直接相关的重庆本地法规、案例和办事材料。</h2>
+                                <p>不再让用户在大而散的知识库里自己翻。这里直接给和你当前争议最相关的本地摘要，需要时再点开原文继续核对。</p>
+                            </div>
+                            <div class="hero-metrics">
+                                <article class="metric-card">
+                                    <strong>已匹配资料</strong>
+                                    <span>{{ visibleReferences.length }}</span>
+                                    <div class="soft">整理案情后会自动抓取。</div>
+                                </article>
+                                <article class="metric-card">
+                                    <strong>当前案件类型</strong>
+                                    <span>{{ inferredCaseType }}</span>
+                                    <div class="soft">资料会围绕这个方向继续刷新。</div>
+                                </article>
+                            </div>
+                        </div>
+                    </article>
+
+                    <section class="card">
+                        <div class="section-head">
+                            <div>
+                                <div class="eyebrow">资料列表</div>
+                                <strong>本地法条、案例和办事参考</strong>
+                            </div>
+                            <button class="btn primary" :disabled="loading || !caseForm.facts.trim()" @click="refreshReferences">{{ loading ? '刷新中...' : '刷新资料' }}</button>
+                        </div>
+                        <div class="reference-list" v-if="visibleReferences.length">
+                            <article class="reference-item" v-for="ref in visibleReferences" :key="ref.title + ref.url">
+                                <strong>{{ ref.title }}</strong>
+                                <div class="soft">{{ ref.source || '重庆本地参考资料' }}</div>
+                                <p>{{ referenceSnippet(ref) }}</p>
+                                <a v-if="ref.url" :href="ref.url" target="_blank" rel="noopener">查看原文</a>
+                            </article>
+                        </div>
+                        <div v-else class="empty-state">先整理案情，再来这里看重庆本地资料。系统会优先放真正有帮助的内容，而不是通用法律百科。</div>
+                    </section>
+                </section>
+
+                <section v-else-if="currentView === 'history'" key="history" class="screen">
+                    <article class="hero-card">
+                        <div class="hero-layout">
+                            <div class="hero-copy">
+                                <div class="eyebrow">历史记录</div>
+                                <h2>让案件推进有记忆，不需要每次从头再说。</h2>
+                                <p>每次整理案情、生成文书后，本地都会自动留下可恢复快照。你可以随时恢复到之前的版本，也可以导出当前材料包继续线下处理。</p>
+                            </div>
+                            <div class="hero-metrics">
+                                <article class="metric-card">
+                                    <strong>历史快照</strong>
+                                    <span>{{ historyEntries.length }}</span>
+                                    <div class="soft">仅保存在当前浏览器。</div>
+                                </article>
+                                <article class="metric-card">
+                                    <strong>本地动作</strong>
+                                    <span>{{ activities.length }}</span>
+                                    <div class="soft">会记录整理、校验、导出等关键动作。</div>
+                                </article>
+                            </div>
+                        </div>
+                    </article>
+
+                    <section class="card">
+                        <div class="section-head">
+                            <div>
+                                <div class="eyebrow">快照列表</div>
+                                <strong>恢复之前的案件状态</strong>
+                            </div>
+                            <div class="doc-actions">
+                                <button class="btn subtle" :disabled="!workupResult" @click="exportResult">导出当前材料包</button>
+                                <button class="btn danger" :disabled="!historyEntries.length" @click="clearHistory">清空历史</button>
+                            </div>
+                        </div>
+                        <div class="history-list" v-if="historyEntries.length">
+                            <article class="history-item" v-for="entry in historyEntries" :key="entry.id">
+                                <div class="footer-tags">
+                                    <span class="chip">{{ entry.kindLabel }}</span>
+                                    <span class="chip">{{ entry.time }}</span>
+                                    <span class="chip">材料度 {{ entry.readiness }}%</span>
+                                </div>
+                                <strong>{{ entry.title }}</strong>
+                                <p>{{ entry.primaryFinding }} · {{ entry.nextBestAction }}</p>
+                                <div class="history-actions">
+                                    <button class="btn subtle" @click="restoreHistory(entry)">恢复到当前案件</button>
+                                    <button class="btn subtle" @click="deleteHistory(entry.id)">删除</button>
+                                </div>
+                            </article>
+                        </div>
+                        <div v-else class="empty-state">当前还没有历史记录。完成一次案情整理或文书生成后，这里会自动出现可恢复快照。</div>
+                    </section>
+                </section>
+
+                <section v-else key="settings" class="screen">
+                    <article class="hero-card">
+                        <div class="hero-layout">
+                            <div class="hero-copy">
+                                <div class="eyebrow">我的信息</div>
+                                <h2>只保留用户会关心的本地偏好，不再把后台配置暴露到前台。</h2>
+                                <p>这里仅管理默认文书、自动保存、界面密度和本地身份。接口地址不再由前台用户手动配置，避免把部署细节暴露给普通劳动者。</p>
+                            </div>
+                            <div class="hero-metrics">
+                                <article class="metric-card">
+                                    <strong>默认文书</strong>
+                                    <span>{{ settings.defaultDocumentType }}</span>
+                                    <div class="soft">分析完成后可直接沿用。</div>
+                                </article>
+                                <article class="metric-card">
+                                    <strong>本地身份</strong>
+                                    <span>{{ loggedIn ? '已保存' : '未填写' }}</span>
+                                    <div class="soft">不会创建后端账户，也不会上传。</div>
+                                </article>
+                            </div>
+                        </div>
+                    </article>
+
+                    <div class="settings-grid">
+                        <section class="card">
+                            <div class="section-head">
+                                <div>
+                                    <div class="eyebrow">偏好设置</div>
+                                    <strong>界面与文书行为</strong>
+                                </div>
+                            </div>
+                            <div class="stack">
+                                <div class="field">
+                                    <label for="default-document">默认文书类型</label>
+                                    <select id="default-document" v-model="settings.defaultDocumentType">
+                                        <option>仲裁申请书</option>
+                                        <option>证据清单</option>
+                                        <option>庭前调解申请书</option>
+                                    </select>
+                                </div>
+                                <div class="toggle-row">
+                                    <div>
+                                        <strong>分析后自动生成文书</strong>
+                                        <div class="soft">适合想直接拿到草稿的人。关闭后可减少额外调用。</div>
+                                    </div>
+                                    <label class="switch">
+                                        <input v-model="settings.autoGenerateDocument" type="checkbox">
+                                        <span></span>
+                                    </label>
+                                </div>
+                                <div class="toggle-row">
+                                    <div>
+                                        <strong>自动保存历史快照</strong>
+                                        <div class="soft">便于恢复之前的案情、文书和分析结果。</div>
+                                    </div>
+                                    <label class="switch">
+                                        <input v-model="settings.autoSaveHistory" type="checkbox">
+                                        <span></span>
+                                    </label>
+                                </div>
+                                <div class="toggle-row">
+                                    <div>
+                                        <strong>紧凑模式</strong>
+                                        <div class="soft">减少留白，适合频繁查看材料的人。</div>
+                                    </div>
+                                    <label class="switch">
+                                        <input v-model="settings.compactMode" type="checkbox">
+                                        <span></span>
+                                    </label>
+                                </div>
+                                <button class="btn primary" @click="saveSettings">保存本地设置</button>
+                            </div>
+                        </section>
+
+                        <section class="card">
+                            <div class="section-head">
+                                <div>
+                                    <div class="eyebrow">本地身份</div>
+                                    <strong>填写后可自动回填联系方式</strong>
+                                </div>
+                            </div>
+                            <div class="field-grid">
+                                <div class="field">
+                                    <label for="profile-name">名称</label>
+                                    <input id="profile-name" v-model="authDraft.name" placeholder="例如：张三">
+                                </div>
+                                <div class="field">
+                                    <label for="profile-role">身份</label>
+                                    <input id="profile-role" v-model="authDraft.role" placeholder="例如：案件申请人">
+                                </div>
+                                <div class="field">
+                                    <label for="profile-phone">电话</label>
+                                    <input id="profile-phone" v-model="authDraft.phone" type="tel" placeholder="仅保存在本地">
+                                </div>
+                                <div class="field">
+                                    <label for="profile-email">邮箱</label>
+                                    <input id="profile-email" v-model="authDraft.email" type="email" placeholder="仅保存在本地">
+                                </div>
+                            </div>
+                            <div class="doc-actions" style="margin-top: 16px;">
+                                <button class="btn primary" @click="handleLogin">{{ loggedIn ? '更新本地身份' : '保存本地身份' }}</button>
+                                <button v-if="loggedIn" class="btn danger" @click="logout">退出本地身份</button>
+                            </div>
+                        </section>
+                    </div>
+                </section>
+            </transition>
+        </main>
+
+        <aside class="right-rail">
+            <section class="rail-panel">
+                <div class="section-head">
+                    <div>
+                        <div class="eyebrow">案件摘要</div>
+                        <strong>{{ primaryFinding }}</strong>
+                    </div>
+                    <span :class="['status-pill', statusTone]">{{ readinessText }}</span>
+                </div>
+                <div class="progress">
+                    <div class="progress-bar" :style="{ width: readiness + '%' }"></div>
+                </div>
+                <div class="summary-lines">
+                    <div class="summary-line" v-for="line in conclusionLines" :key="line">{{ line }}</div>
+                </div>
+                <div class="meta-grid">
+                    <div class="meta-item"><span>阶段</span><b>{{ workflowStage }}</b></div>
+                    <div class="meta-item"><span>推荐动作</span><b>{{ nextBestAction }}</b></div>
+                    <div class="meta-item"><span>推荐文书</span><b>{{ preferredDocType }}</b></div>
+                </div>
+            </section>
+
+            <section class="rail-panel">
+                <div class="section-head">
+                    <div>
+                        <div class="eyebrow">案件信息</div>
+                        <strong>补齐关键字段</strong>
+                    </div>
+                </div>
+                <div class="stack">
+                    <div class="field">
+                        <label for="goal-input">你最想解决什么</label>
+                        <input id="goal-input" v-model="caseForm.goal" placeholder="例如：拿回欠薪、主张违法解除赔偿">
+                    </div>
+                    <div class="field-grid">
+                        <div class="field">
+                            <label for="company-name">公司名称</label>
+                            <input id="company-name" v-model="caseForm.applicant_info.employer_name" placeholder="重庆某公司">
+                        </div>
+                        <div class="field">
+                            <label for="workplace">实际工作地</label>
+                            <input id="workplace" v-model="caseForm.applicant_info.workplace" placeholder="例如：重庆渝北">
+                        </div>
+                        <div class="field">
+                            <label for="salary-input">月工资</label>
+                            <input id="salary-input" v-model.number="caseForm.applicant_info.salary" type="number" min="0" inputmode="numeric">
+                        </div>
+                        <div class="field">
+                            <label for="years-input">工作年限</label>
+                            <input id="years-input" v-model.number="caseForm.years" type="number" min="0" step="0.1" inputmode="decimal">
+                        </div>
+                        <div class="field">
+                            <label for="start-date">入职时间</label>
+                            <input id="start-date" v-model="caseForm.applicant_info.start_date" type="date">
+                        </div>
+                        <div class="field">
+                            <label for="dispute-date">争议发生时间</label>
+                            <input id="dispute-date" v-model="caseForm.applicant_info.dispute_date" type="date">
+                        </div>
+                        <div class="field">
+                            <label for="contact-name">联系人</label>
+                            <input id="contact-name" v-model="caseForm.contact_name" placeholder="便于文书回填">
+                        </div>
+                        <div class="field">
+                            <label for="contact-phone">联系电话</label>
+                            <input id="contact-phone" v-model="caseForm.contact_phone" type="tel" placeholder="便于文书回填">
+                        </div>
+                    </div>
+                    <label class="check-inline">
+                        <input v-model="caseForm.applicant_info.still_employed" type="checkbox">
+                        <span>我目前仍在这家公司工作</span>
+                    </label>
+                    <div class="field">
+                        <label for="evidence-input">已有材料名称</label>
+                        <textarea id="evidence-input" v-model="evidenceText" placeholder="一行一个，例如：劳动合同、工资流水、聊天记录、考勤记录"></textarea>
+                    </div>
+                </div>
+            </section>
+
+            <section class="rail-panel">
+                <div class="section-head">
+                    <div>
+                        <div class="eyebrow">待补信息</div>
+                        <strong>目前还差什么</strong>
+                    </div>
+                </div>
+                <ol class="ordered-list" v-if="missingQuestions.length">
+                    <li v-for="item in missingQuestions.slice(0, 6)" :key="item">{{ item }}</li>
+                </ol>
+                <div v-else class="notice">当前没有明显缺口。继续整理或直接进入文书中心即可。</div>
+                <div class="chip-row" v-if="quickQuestions.length">
+                    <button class="chip-btn" v-for="question in quickQuestions" :key="question" @click="useQuickQuestion(question)">
+                        {{ question }}
+                    </button>
+                </div>
+            </section>
+
+            <section class="rail-panel">
+                <div class="section-head">
+                    <div>
+                        <div class="eyebrow">本地身份与材料</div>
+                        <strong>{{ loggedIn ? profile.name : '访客模式' }}</strong>
+                    </div>
+                </div>
+                <div class="kv-grid">
+                    <div class="kv-item"><span>身份</span><b>{{ loggedIn ? (profile.role || '案件申请人') : '未填写' }}</b></div>
+                    <div class="kv-item"><span>案件类型</span><b>{{ inferredCaseType }}</b></div>
+                    <div class="kv-item"><span>材料数量</span><b>{{ allEvidenceItems.length }}</b></div>
+                    <div class="kv-item"><span>本地快照</span><b>{{ historyEntries.length }}</b></div>
+                </div>
+                <div class="footer-tags" v-if="uploadedFiles.length">
+                    <span class="chip" v-for="file in uploadedFiles" :key="file">{{ file }}</span>
+                </div>
+                <div v-else class="soft">还没有通过文件选择器添加材料名称。</div>
+            </section>
+        </aside>
+    </div>
+
+    <div v-if="showAuthPanel" class="overlay" @click.self="showAuthPanel = false">
+        <div class="modal">
+            <div class="eyebrow">本地身份</div>
+            <h2 class="screen-title">{{ loggedIn ? '更新本地身份' : '填写本地身份' }}</h2>
+            <p>信息仅保存在当前浏览器，用于回填文书、联系方式和本地历史记录，不会创建服务器账户。</p>
+            <div class="field-grid" style="margin-top: 18px;">
+                <div class="field">
+                    <label for="modal-name">名称</label>
+                    <input id="modal-name" v-model="authDraft.name" placeholder="例如：张三">
+                </div>
+                <div class="field">
+                    <label for="modal-role">身份</label>
+                    <input id="modal-role" v-model="authDraft.role" placeholder="例如：案件申请人">
+                </div>
+                <div class="field">
+                    <label for="modal-phone">电话</label>
+                    <input id="modal-phone" v-model="authDraft.phone" type="tel" placeholder="仅保存在本地">
+                </div>
+                <div class="field">
+                    <label for="modal-email">邮箱</label>
+                    <input id="modal-email" v-model="authDraft.email" type="email" placeholder="仅保存在本地">
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn subtle" @click="showAuthPanel = false">关闭</button>
+                <button class="btn primary" @click="handleLogin">{{ loggedIn ? '保存修改' : '保存身份' }}</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const { createApp } = Vue;
+
+const STORAGE_KEYS = {
+    settings: 'lerap_ui_settings',
+    profile: 'lerap_ui_profile',
+    session: 'lerap_ui_session',
+    history: 'lerap_ui_history',
+    activities: 'lerap_ui_activities'
+};
+
+const CHONGQING_AREAS = [
+    '渝中', '江北', '南岸', '九龙坡', '沙坪坝', '大渡口', '北碚', '渝北', '巴南',
+    '长寿', '江津', '合川', '永川', '南川', '綦江', '大足', '璧山', '铜梁', '潼南',
+    '荣昌', '开州', '梁平', '武隆', '万州', '涪陵', '黔江', '城口', '丰都', '垫江',
+    '忠县', '云阳', '奉节', '巫山', '巫溪', '石柱', '秀山', '酉阳', '彭水'
+];
+
+function safeParse(text, fallback) {
+    if (!text) return fallback;
+    try {
+        return JSON.parse(text);
+    } catch (error) {
+        return fallback;
+    }
+}
+
+function deepClone(value) {
+    if (value === undefined) return undefined;
+    return JSON.parse(JSON.stringify(value));
+}
+
+function formatDateTime(value = null) {
+    const date = value ? new Date(value) : new Date();
+    return date.toLocaleString('zh-CN', { hour12: false });
+}
+
+function compactWorkupResult(result) {
+    if (!result) return null;
+    const copy = deepClone(result);
+    if (Array.isArray(copy.local_references)) {
+        copy.local_references = copy.local_references.slice(0, 6);
+    }
+    if (Array.isArray(copy.pipeline_status)) {
+        copy.pipeline_status = copy.pipeline_status.slice(0, 6);
+    }
+    return copy;
+}
+
+function defaultCaseForm(profile = null) {
+    return {
+        facts: '',
+        goal: '',
+        years: 0,
+        contact_name: profile?.name || '',
+        contact_phone: profile?.phone || '',
+        applicant_info: {
+            name: profile?.name || '',
+            employer_name: '',
+            employer_address: '',
+            workplace: '',
+            start_date: '',
+            dispute_date: '',
+            salary: 0,
+            still_employed: false
+        }
+    };
+}
+
+createApp({
+    data() {
+        const injectedApiBase = String(window.LERAP_API_BASE || localStorage.getItem('lerap_api_base') || '').replace(/\/$/, '');
+        const storedSettings = safeParse(localStorage.getItem(STORAGE_KEYS.settings), {});
+        const storedProfile = safeParse(localStorage.getItem(STORAGE_KEYS.profile), {});
+        const storedSession = safeParse(localStorage.getItem(STORAGE_KEYS.session), {});
+        const profile = {
+            name: storedProfile.name || '',
+            role: storedProfile.role || '案件申请人',
+            phone: storedProfile.phone || '',
+            email: storedProfile.email || ''
+        };
+
+        return {
+            sidebarOpen: false,
+            showAuthPanel: false,
+            currentView: 'session',
+            activeWorkspaceTab: 'chat',
+            loading: false,
+            errorMessage: '',
+            chatInput: '',
+            evidenceText: '',
+            uploadedFiles: [],
+            workupResult: null,
+            documentResult: null,
+            documentValidation: null,
+            documentType: storedSettings.defaultDocumentType || '仲裁申请书',
+            messages: [
+                {
+                    id: 1,
+                    role: 'assistant',
+                    text: '把你和公司的情况直接告诉我。我会先整理事实，再同步给出风险提醒、材料清单和文书建议。'
+                }
+            ],
+            historyEntries: safeParse(localStorage.getItem(STORAGE_KEYS.history), []),
+            activities: safeParse(localStorage.getItem(STORAGE_KEYS.activities), []),
+            settings: {
+                defaultDocumentType: storedSettings.defaultDocumentType || '仲裁申请书',
+                autoGenerateDocument: storedSettings.autoGenerateDocument || false,
+                autoSaveHistory: storedSettings.autoSaveHistory !== false,
+                compactMode: storedSettings.compactMode || false
+            },
+            injectedApiBase,
+            loggedIn: !!storedSession.loggedIn,
+            profile,
+            authDraft: { ...profile },
+            caseForm: defaultCaseForm(!!storedSession.loggedIn ? profile : null)
+        };
+    },
+    computed: {
+        navigation() {
+            return [
+                {
+                    key: 'session',
+                    mark: '案',
+                    label: '智能接待',
+                    note: '先说案情，再看结果',
+                    badge: this.workupResult ? '在办' : ''
+                },
+                {
+                    key: 'documents',
+                    mark: '文',
+                    label: '文书中心',
+                    note: '生成、校验、导出',
+                    badge: this.documentResult ? '草稿' : ''
+                },
+                {
+                    key: 'references',
+                    mark: '渝',
+                    label: '重庆参考',
+                    note: '只看本地相关材料',
+                    badge: this.visibleReferences.length || ''
+                },
+                {
+                    key: 'history',
+                    mark: '记',
+                    label: '历史记录',
+                    note: '恢复之前的案件快照',
+                    badge: this.historyEntries.length || ''
+                },
+                {
+                    key: 'settings',
+                    mark: '我',
+                    label: '我的信息',
+                    note: '本地偏好与身份',
+                    badge: this.loggedIn ? '已填' : ''
+                }
+            ];
+        },
+        currentMeta() {
+            const map = {
+                session: {
+                    kicker: '案件入口',
+                    title: '把案情说清楚',
+                    lead: '主界面只承接用户输入和最重要的结果，不再沿袭旧工作台式结构。'
+                },
+                documents: {
+                    kicker: '材料输出',
+                    title: '文书中心',
+                    lead: '把当前案件结果直接转成可校验、可导出的文书草稿。'
+                },
+                references: {
+                    kicker: '本地依据',
+                    title: '重庆参考',
+                    lead: '只保留和当前争议直接有关的重庆本地资料。'
+                },
+                history: {
+                    kicker: '本地记忆',
+                    title: '历史记录',
+                    lead: '恢复之前的案件进度，避免每次重新输入。'
+                },
+                settings: {
+                    kicker: '本地偏好',
+                    title: '我的信息',
+                    lead: '前台不再暴露接口配置，只保留用户能理解的本地设置。'
+                }
+            };
+            return map[this.currentView] || map.session;
+        },
+        resolvedApiBase() {
+            return this.injectedApiBase;
+        },
+        inferredCaseType() {
+            return this.inferCaseType();
+        },
+        visibleReferences() {
+            return this.workupResult?.local_references || [];
+        },
+        missingQuestions() {
+            const intake = this.workupResult?.intake?.missing_questions || [];
+            const analysis = this.workupResult?.analysis?.missing_info || [];
+            return [...new Set([...intake, ...analysis].map(item => String(item).replace(/^•\s*/, '').trim()).filter(Boolean))];
+        },
+        quickQuestions() {
+            return this.missingQuestions.slice(0, 4);
+        },
+        claimItems() {
+            return this.workupResult?.analysis?.claim_items || [];
+        },
+        allEvidenceItems() {
+            return [...new Set([...this.syncEvidence(), ...this.uploadedFiles])];
+        },
+        flatEvidenceChecklist() {
+            const groups = this.workupResult?.analysis?.evidence_checklist || [];
+            return groups.flatMap(group => (group.items || []).map(item => `${group.category}: ${item}`));
+        },
+        actionChecklist() {
+            if (!this.workupResult) return [];
+            const items = [];
+            this.missingQuestions.forEach(item => items.push(item));
+            (this.workupResult.analysis?.action_plan || []).forEach(item => items.push(item));
+            return [...new Set(items)].filter(Boolean);
+        },
+        recommendations() {
+            return this.workupResult?.analysis?.recommendations || [];
+        },
+        workflowStage() {
+            return this.workupResult?.workflow_stage || '未开始';
+        },
+        primaryFinding() {
+            if (!this.workupResult) return '先把事实整理清楚';
+            return `${this.workupResult.analysis?.case_type || '劳动争议'} · ${this.workflowStage}`;
+        },
+        nextBestAction() {
+            return this.workupResult?.service_recommendation?.next_best_action || '先补充案情事实';
+        },
+        preferredDocType() {
+            if (!this.workupResult) return this.settings.defaultDocumentType;
+            if (this.claimItems.some(item => /调解|和解/.test(item.name))) return '庭前调解申请书';
+            return '仲裁申请书';
+        },
+        materialConfidence() {
+            return this.workupResult?.success_prediction?.success_probability || '待判断';
+        },
+        suggestedDocumentText() {
+            const docs = this.workupResult?.suggested_documents || [];
+            return docs.length ? docs.join(' / ') : '待生成';
+        },
+        warningsText() {
+            return (this.workupResult?.analysis?.warnings || []).join('；');
+        },
+        validationSummary() {
+            if (!this.documentValidation) return '';
+            const issues = this.documentValidation.issues || [];
+            const warnings = this.documentValidation.warnings || [];
+            const summary = [...issues, ...warnings].slice(0, 3).join('；');
+            return summary || '文书字段基本一致。';
+        },
+        plainJurisdiction() {
+            if (!this.workupResult) return '整理后，这里会告诉你重庆是否可能有管辖，以及还缺哪些地点信息。';
+            const jurisdiction = this.workupResult.analysis?.jurisdiction || {};
+            if (jurisdiction.likely_chongqing_jurisdiction) {
+                return jurisdiction.suggested_forum || '大概率可以在重庆对应区县仲裁委处理。';
+            }
+            return '还需要补充公司地址、实际工作地或合同履行地，才能判断重庆哪里能处理。';
+        },
+        probabilityRange() {
+            if (!this.workupResult) return '整理完成后，这里会说明当前材料大概支撑到什么程度。';
+            const probability = this.workupResult.success_prediction?.success_probability || '待判断';
+            const factors = this.workupResult.success_prediction?.key_factors || [];
+            if (!factors.length) {
+                return `当前倾向：${probability}，仍需结合证据、时效和管辖继续补充。`;
+            }
+            return `当前倾向：${probability}。主要受 ${factors.slice(0, 2).join('、')} 影响。`;
+        },
+        opponentSummary() {
+            const review = this.workupResult?.analysis?.opposition_review;
+            const blue = review?.blue_lawyer_analysis || {};
+            const items = blue.key_arguments || blue.improvement_suggestions || [];
+            if (!items.length) return '整理后，我会提前预判公司可能的说法，帮助你补强材料。';
+            return items.slice(0, 3).join('；');
+        },
+        readiness() {
+            if (!this.workupResult) return 18;
+            const evidenceScore = Math.min(this.syncEvidence().length * 10, 30);
+            const jurisdictionScore = this.workupResult.analysis?.jurisdiction?.likely_chongqing_jurisdiction ? 24 : 8;
+            const missingPenalty = Math.min(this.missingQuestions.length * 8, 34);
+            return Math.max(18, Math.min(96, 44 + evidenceScore + jurisdictionScore - missingPenalty));
+        },
+        readinessText() {
+            if (!this.workupResult) return '待整理';
+            if (this.readiness >= 75) return '较完整';
+            if (this.readiness >= 45) return '可继续';
+            return '待补足';
+        },
+        heroMetrics() {
+            return [
+                {
+                    label: '当前状态',
+                    value: this.readinessText,
+                    note: '综合材料、管辖和缺口后给出的推进状态，不代表裁判结果。'
+                },
+                {
+                    label: '案件类型',
+                    value: this.inferredCaseType,
+                    note: '由案情和目标自动推断，方便直接命中对应规则。'
+                },
+                {
+                    label: '当前阶段',
+                    value: this.workflowStage,
+                    note: '告诉你现在更适合补材料，还是已经可以准备文书。'
+                },
+                {
+                    label: '推荐文书',
+                    value: this.preferredDocType,
+                    note: '默认优先展示最适合当前案件的文书类型。'
+                }
+            ];
+        },
+        processCards() {
+            if (!this.workupResult) return [];
+            const references = this.visibleReferences.length;
+            return [
+                {
+                    label: '争议方向已经判断',
+                    detail: `系统已先识别为 ${this.workupResult.analysis?.case_type || '劳动争议'}。`,
+                    tone: 'good'
+                },
+                {
+                    label: '待补信息已经列出',
+                    detail: this.missingQuestions.length
+                        ? `当前还差 ${this.missingQuestions.length} 项关键信息，建议优先补充前几项。`
+                        : '目前没有明显缺口，可以继续准备文书和材料。',
+                    tone: this.missingQuestions.length ? 'warn' : 'good'
+                },
+                {
+                    label: '诉求和证据已经拆分',
+                    detail: `已整理 ${this.claimItems.length || 0} 个诉求方向，列出 ${this.flatEvidenceChecklist.length || 0} 条证据提示。`,
+                    tone: this.flatEvidenceChecklist.length ? 'good' : 'warn'
+                },
+                {
+                    label: '重庆本地参考已经匹配',
+                    detail: references ? `当前已准备 ${references} 条本地参考资料。` : '整理完成后会继续补充本地法规、案例和办事参考。',
+                    tone: references ? 'good' : 'warn'
+                },
+                {
+                    label: '下一步动作已经给出',
+                    detail: this.nextBestAction,
+                    tone: 'good'
+                }
+            ];
+        },
+        documentValidationGroups() {
+            if (!this.documentValidation) return [];
+            const groups = [
+                { label: '必须改', items: this.documentValidation.issues || [] },
+                { label: '建议看', items: this.documentValidation.warnings || [] },
+                { label: '可以补充', items: this.documentValidation.suggestions || [] }
+            ];
+            return groups.filter(group => group.items.length);
+        },
+        statusTone() {
+            if (!this.workupResult) return 'warn';
+            if (this.readiness >= 75) return 'good';
+            if (this.readiness >= 45) return 'warn';
+            return 'risk';
+        },
+        userInitial() {
+            const name = (this.loggedIn ? this.profile.name : '访客').trim();
+            return name ? name.slice(0, 1).toUpperCase() : '访';
+        },
+        conclusionLines() {
+            if (!this.workupResult) {
+                return [
+                    '先描述事实、公司行为和你已有的材料名称。',
+                    '整理完成后，这里会浓缩成几条最重要的判断和下一步。',
+                    '劳动争议仲裁准备信息仅供参考，不承诺结果。'
+                ];
+            }
+            const analysis = this.workupResult.analysis || {};
+            const lines = [
+                `系统先识别为：${analysis.case_type || '劳动争议'}。`,
+                `目前把握：${this.workupResult.success_prediction?.success_probability || '待判断'}，仅用于准备材料。`,
+                `当前建议：${this.nextBestAction}。`
+            ];
+            if (this.missingQuestions.length) {
+                lines.push(`仍需补充：${this.missingQuestions.slice(0, 2).join('；')}。`);
+            }
+            return lines;
+        }
+    },
+    mounted() {
+        this.documentType = this.settings.defaultDocumentType || this.documentType;
+        if (!this.activities.length) {
+            this.recordActivity('界面已载入', '新版前端已切换为面向普通劳动者的接待式布局。');
+        }
+        if (this.loggedIn && !this.caseForm.contact_name) {
+            this.caseForm.contact_name = this.profile.name;
+            this.caseForm.contact_phone = this.profile.phone;
+            this.caseForm.applicant_info.name = this.profile.name;
+        }
+    },
+    methods: {
+        openView(view) {
+            this.currentView = view;
+            this.sidebarOpen = false;
+        },
+        persistSettings() {
+            localStorage.setItem(STORAGE_KEYS.settings, JSON.stringify(this.settings));
+        },
+        persistProfile() {
+            localStorage.setItem(STORAGE_KEYS.profile, JSON.stringify(this.profile));
+            localStorage.setItem(STORAGE_KEYS.session, JSON.stringify({ loggedIn: this.loggedIn }));
+        },
+        persistHistory() {
+            localStorage.setItem(STORAGE_KEYS.history, JSON.stringify(this.historyEntries));
+            localStorage.setItem(STORAGE_KEYS.activities, JSON.stringify(this.activities));
+        },
+        recordActivity(title, detail) {
+            this.activities = [
+                {
+                    id: `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+                    title,
+                    detail,
+                    time: formatDateTime()
+                },
+                ...this.activities
+            ].slice(0, 24);
+            this.persistHistory();
+        },
+        handleLogin() {
+            const name = String(this.authDraft.name || '').trim();
+            if (!name) {
+                this.errorMessage = '请先填写名称。';
+                return;
+            }
+            this.profile = {
+                name,
+                role: String(this.authDraft.role || '案件申请人').trim() || '案件申请人',
+                phone: String(this.authDraft.phone || '').trim(),
+                email: String(this.authDraft.email || '').trim()
+            };
+            this.loggedIn = true;
+            this.showAuthPanel = false;
+            this.errorMessage = '';
+            if (!this.caseForm.contact_name) this.caseForm.contact_name = this.profile.name;
+            if (!this.caseForm.contact_phone) this.caseForm.contact_phone = this.profile.phone;
+            if (!this.caseForm.applicant_info.name) this.caseForm.applicant_info.name = this.profile.name;
+            this.persistProfile();
+            this.recordActivity('本地身份已保存', `${this.profile.name} 的本地信息已更新。`);
+        },
+        logout() {
+            const previousName = this.profile.name || '当前用户';
+            this.loggedIn = false;
+            this.showAuthPanel = false;
+            localStorage.setItem(STORAGE_KEYS.session, JSON.stringify({ loggedIn: false }));
+            this.recordActivity('已退出本地身份', `${previousName} 已退出本地会话。`);
+        },
+        saveSettings() {
+            this.documentType = this.settings.defaultDocumentType;
+            this.persistSettings();
+            this.recordActivity('设置已保存', `默认文书已更新为 ${this.settings.defaultDocumentType}。`);
+        },
+        newWorkspace() {
+            this.chatInput = '';
+            this.evidenceText = '';
+            this.uploadedFiles = [];
+            this.workupResult = null;
+            this.documentResult = null;
+            this.documentValidation = null;
+            this.errorMessage = '';
+            this.documentType = this.settings.defaultDocumentType;
+            this.activeWorkspaceTab = 'chat';
+            this.currentView = 'session';
+            this.messages = [
+                {
+                    id: 1,
+                    role: 'assistant',
+                    text: '新的案件已经准备好。直接说发生了什么，我会同步整理风险、材料和文书建议。'
+                }
+            ];
+            this.caseForm = defaultCaseForm(this.loggedIn ? this.profile : null);
+            this.recordActivity('新建案件', '已重置当前案情上下文。');
+        },
+        syncEvidence() {
+            return this.evidenceText
+                .split(/\n|,|，|、/)
+                .map(item => item.trim())
+                .filter(Boolean);
+        },
+        inferCaseType() {
+            const text = `${this.caseForm.facts} ${this.caseForm.goal}`.toLowerCase();
+            if (/(工伤|受伤|职业病)/.test(text)) return '工伤待遇纠纷';
+            if (/(拖欠|欠薪|工资)/.test(text)) return '工资报酬纠纷';
+            if (/(加班)/.test(text)) return '加班费纠纷';
+            if (/(调岗|降薪|辞退|解除|开除|旷工)/.test(text)) return '违法解除纠纷';
+            if (/(平台|主播|骑手|网约车|配送|接单)/.test(text)) return '新就业形态劳动关系确认';
+            if (/(竞业)/.test(text)) return '竞业限制纠纷';
+            return '劳动争议';
+        },
+        deriveAmount() {
+            const salary = Number(this.caseForm.applicant_info.salary || 0);
+            const years = Number(this.caseForm.years || 0);
+            const text = `${this.caseForm.facts} ${this.caseForm.goal} ${this.inferCaseType()}`;
+            if (!salary) return 0;
+            if (/(工资|欠薪|劳动报酬)/.test(text)) return Math.round(salary * 3);
+            if (/(工伤|受伤|职业病)/.test(text)) return Math.round(salary * 12);
+            if (/(加班)/.test(text)) return Math.round(salary * Math.max(1, years));
+            if (/(违法解除|解除|辞退|开除)/.test(text)) return Math.round(salary * Math.max(1, years) * 2);
+            return Math.round(salary * Math.max(1, years));
+        },
+        buildPayload() {
+            const evidence = this.syncEvidence();
+            const salary = Number(this.caseForm.applicant_info.salary || 0);
+            const years = Number(this.caseForm.years || 0);
+            return {
+                case_type: this.inferCaseType(),
+                facts: this.caseForm.facts,
+                evidence,
+                evidence_quality: evidence.length >= 4 ? '良好' : evidence.length >= 2 ? '一般' : '较差',
+                applicant_background: '普通员工',
+                enable_opposition_review: true,
+                years,
+                salary,
+                amount: this.deriveAmount(),
+                contact_name: this.caseForm.contact_name || this.profile.name,
+                contact_phone: this.caseForm.contact_phone || this.profile.phone,
+                applicant_info: {
+                    ...this.caseForm.applicant_info,
+                    salary,
+                    years
+                }
+            };
+        },
+        applyTextToCase(text) {
+            const trimmed = text.trim();
+            if (!trimmed) return;
+            if (!this.caseForm.facts.includes(trimmed)) {
+                this.caseForm.facts = `${this.caseForm.facts}\n${trimmed}`.trim();
+            }
+            const salaryMatch = trimmed.match(/(?:月薪|工资|月工资)[^\d]*(\d{4,6})/);
+            if (salaryMatch) this.caseForm.applicant_info.salary = Number(salaryMatch[1]);
+            const matchedArea = CHONGQING_AREAS.find(area =>
+                trimmed.includes(`重庆${area}`) ||
+                trimmed.includes(`重庆市${area}`) ||
+                trimmed.includes(`${area}区`) ||
+                trimmed.includes(`${area}县`) ||
+                trimmed.includes(`${area}自治县`)
+            );
+            if (matchedArea && !this.caseForm.applicant_info.workplace) {
+                this.caseForm.applicant_info.workplace = `重庆${matchedArea}`;
+            }
+            const companyMatch = trimmed.match(/(?:在|入职|公司是|公司叫|单位是)([^，。；\n]{2,28}?(?:公司|厂|店|中心|医院|律所|事务所))/);
+            if (companyMatch) {
+                const companyName = companyMatch[1].trim();
+                if (!/一家公司|某公司|一间公司/.test(companyName) && !/^[一某].{0,3}(?:公司|厂|店|中心|医院|律所|事务所)$/.test(companyName)) {
+                    this.caseForm.applicant_info.employer_name = companyName;
+                }
+            }
+            const evidenceWords = ['劳动合同', '工资流水', '聊天记录', '考勤记录', '解除通知', '录音', '工牌', '社保记录', '诊断证明'];
+            const evidence = evidenceWords.filter(item => trimmed.includes(item));
+            if (evidence.length) {
+                const merged = [...new Set([...this.syncEvidence(), ...evidence])];
+                this.evidenceText = merged.join('\n');
+            }
+        },
+        async sendMessage() {
+            const text = this.chatInput.trim();
+            if (!text) return;
+            this.messages.push({ id: Date.now(), role: 'user', text });
+            this.chatInput = '';
+            this.applyTextToCase(text);
+            await this.runAnalysis({ fromChat: true });
+        },
+        useQuickQuestion(question) {
+            this.chatInput = `${question.replace(/^请/, '').replace(/。$/, '')}：`;
+            this.currentView = 'session';
+            this.activeWorkspaceTab = 'chat';
+        },
+        async runAnalysis(options = {}) {
+            if (!this.caseForm.facts.trim()) {
+                this.errorMessage = '请先输入案情事实。';
+                this.currentView = 'session';
+                this.activeWorkspaceTab = 'chat';
+                return;
+            }
+            this.currentView = 'session';
+            this.activeWorkspaceTab = options.fromChat ? 'chat' : 'analysis';
+            await this.withLoading(async () => {
+                const payload = this.buildPayload();
+                const response = await axios.post(`${this.resolvedApiBase}/arbitration/workup`, payload);
+                this.workupResult = response.data;
+                if (!this.documentResult || this.documentType === this.settings.defaultDocumentType) {
+                    this.documentType = this.preferredDocType || this.documentType;
+                }
+                if (this.settings.autoGenerateDocument) {
+                    await this.generateDocument(payload, { preserveView: true, trackHistory: false, reuseLoading: true });
+                }
+                if (options.fromChat) this.pushAssistantResult();
+                this.recordActivity('案情已整理', `${this.primaryFinding} · ${this.nextBestAction}`);
+                this.saveHistory('analysis');
+            });
+        },
+        pushAssistantResult() {
+            const lines = this.conclusionLines.slice(0, 3);
+            if (this.missingQuestions.length) {
+                lines.push(`还需要补充 ${this.missingQuestions.length} 个关键信息：${this.missingQuestions.slice(0, 3).join('；')}`);
+            } else {
+                lines.push('关键信息目前较完整，可以继续进入文书或材料整理。');
+            }
+            this.messages.push({
+                id: Date.now() + 1,
+                role: 'assistant',
+                text: lines.join('\n')
+            });
+            this.$nextTick(() => {
+                if (this.$refs.messages) {
+                    this.$refs.messages.scrollTop = this.$refs.messages.scrollHeight;
+                }
+            });
+        },
+        async generateDocument(payload = null, options = {}) {
+            if (!payload && !this.caseForm.facts.trim()) {
+                this.errorMessage = '请先整理案情，再生成文书。';
+                return;
+            }
+            const task = async () => {
+                const finalPayload = payload || this.buildPayload();
+                const response = await axios.post(`${this.resolvedApiBase}/arbitration/generate-document`, {
+                    document_type: this.documentType,
+                    case_data: finalPayload
+                });
+                this.documentResult = response.data;
+                this.documentValidation = null;
+                await this.validateDocument(finalPayload, { silentActivity: true, reuseLoading: true });
+                if (!options.preserveView) this.currentView = 'documents';
+                if (!options.silentActivity) {
+                    this.recordActivity('文书已更新', `${this.documentType} 草稿已生成。`);
+                }
+                if (options.trackHistory !== false) this.saveHistory('document');
+            };
+
+            if (options.reuseLoading) {
+                await task();
+            } else {
+                await this.withLoading(task);
+            }
+        },
+        async validateDocument(payload = null, options = {}) {
+            if (!this.documentResult?.content) return;
+            const task = async () => {
+                const finalPayload = payload || this.buildPayload();
+                const response = await axios.post(`${this.resolvedApiBase}/arbitration/validate-document`, {
+                    document_type: this.documentType,
+                    case_data: finalPayload,
+                    content: this.documentResult.content
+                });
+                this.documentValidation = response.data;
+                if (!options.silentActivity) {
+                    this.recordActivity('文书已校验', this.validationSummary || '文书字段基本一致。');
+                }
+            };
+            if (options.reuseLoading) {
+                await task();
+            } else {
+                await this.withLoading(task);
+            }
+        },
+        async refreshReferences() {
+            if (!this.caseForm.facts.trim()) {
+                this.errorMessage = '请先整理案情，再刷新资料。';
+                return;
+            }
+            await this.withLoading(async () => {
+                const query = `${this.inferCaseType()} ${this.caseForm.facts}`.trim();
+                const response = await axios.get(`${this.resolvedApiBase}/arbitration/local-references`, {
+                    params: { query, limit: 6 }
+                });
+                if (!this.workupResult) {
+                    this.workupResult = { local_references: [] };
+                }
+                this.workupResult.local_references = response.data.references || [];
+                this.recordActivity('本地资料已刷新', `已加载 ${(response.data.references || []).length} 条重庆资料。`);
+            });
+        },
+        referenceSnippet(ref) {
+            const text = String(ref.summary || ref.raw || '').replace(/\s+/g, ' ').trim();
+            if (!text) return '暂无摘要，建议结合案情继续人工核对。';
+            return text.length > 220 ? `${text.slice(0, 220)}...` : text;
+        },
+        handleFiles(event) {
+            const files = Array.from(event.target.files || []);
+            const names = files.map(file => file.name);
+            this.uploadedFiles = [...new Set([...this.uploadedFiles, ...names])];
+            if (names.length) {
+                this.evidenceText = `${this.evidenceText}\n${names.join('\n')}`.trim();
+                this.recordActivity('材料已加入', `新增 ${names.length} 个材料名称。`);
+            }
+            event.target.value = '';
+        },
+        exportResult() {
+            if (!this.workupResult) return;
+            const disclaimer = '免责声明：本助手只提供劳动仲裁材料准备信息和风险提示，不构成正式法律意见。';
+            const claims = this.claimItems.map((item, index) => `${index + 1}. ${item.name}：${item.calculation}`);
+            const evidence = this.flatEvidenceChecklist.map((item, index) => `${index + 1}. ${item}`);
+            const missing = this.missingQuestions.map((item, index) => `${index + 1}. ${item}`);
+            const actions = this.actionChecklist.map((item, index) => `${index + 1}. ${item}`);
+            const lines = [
+                '重庆劳动仲裁材料包',
+                `生成时间：${formatDateTime()}`,
+                disclaimer,
+                '',
+                '一、案情事实',
+                this.caseForm.facts,
+                '',
+                '二、系统结论',
+                ...this.conclusionLines,
+                '',
+                '三、诉求拆解',
+                ...(claims.length ? claims : ['暂无']),
+                '',
+                '四、待补问题',
+                ...(missing.length ? missing : ['暂无']),
+                '',
+                '五、证据目录',
+                ...(evidence.length ? evidence : ['暂无']),
+                '',
+                '六、下一步',
+                ...(actions.length ? actions : ['暂无']),
+                '',
+                '七、文书草稿',
+                this.documentResult?.content || ''
+            ];
+            const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `重庆劳动仲裁材料包-${new Date().toISOString().slice(0, 10)}.txt`;
+            link.click();
+            URL.revokeObjectURL(url);
+            this.recordActivity('已导出材料包', '当前案件结果已导出为文本材料包。');
+        },
+        exportDocumentWord() {
+            if (!this.documentResult?.content) return;
+            const escaped = this.documentResult.content
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/\n/g, '<br>');
+            const html = `<!doctype html><html><head><meta charset="utf-8"><title>${this.documentType}</title></head><body>${escaped}</body></html>`;
+            const blob = new Blob([html], { type: 'application/msword;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `${this.documentType}-${new Date().toISOString().slice(0, 10)}.doc`;
+            link.click();
+            URL.revokeObjectURL(url);
+            this.recordActivity('已导出 Word', `${this.documentType} 已导出为 Word。`);
+        },
+        exportDocumentPdf() {
+            if (!this.documentResult?.content) return;
+            const win = window.open('', '_blank');
+            if (!win) {
+                this.errorMessage = '浏览器拦截了打印窗口，请允许弹窗后重试。';
+                return;
+            }
+            const escaped = this.documentResult.content
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/\n/g, '<br>');
+            win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${this.documentType}</title><style>body{font-family:"Noto Serif SC","Microsoft YaHei",serif;line-height:1.9;padding:36px;} button{margin-bottom:18px;}</style></head><body><button onclick="window.print()">打印 / 另存为 PDF</button><div>${escaped}</div></body></html>`);
+            win.document.close();
+            this.recordActivity('已打开 PDF 导出', `${this.documentType} 已进入打印窗口。`);
+        },
+        saveHistory(kind) {
+            if (!this.settings.autoSaveHistory || !this.workupResult) return;
+            const kindLabelMap = {
+                analysis: '案情整理',
+                document: '文书草稿'
+            };
+            const entry = {
+                id: Date.now(),
+                kind,
+                kindLabel: kindLabelMap[kind] || '案件快照',
+                title: `${this.inferCaseType()} · ${this.caseForm.applicant_info.employer_name || '未命名案件'}`,
+                time: formatDateTime(),
+                readiness: this.readiness,
+                primaryFinding: this.primaryFinding,
+                nextBestAction: this.nextBestAction,
+                caseForm: deepClone(this.caseForm),
+                evidenceText: this.evidenceText,
+                uploadedFiles: deepClone(this.uploadedFiles),
+                workupResult: compactWorkupResult(this.workupResult),
+                documentResult: deepClone(this.documentResult),
+                documentValidation: deepClone(this.documentValidation),
+                messages: deepClone(this.messages.slice(-10))
+            };
+            this.historyEntries = [entry, ...this.historyEntries.filter(item => item.id !== entry.id)].slice(0, 12);
+            this.persistHistory();
+        },
+        restoreHistory(entry) {
+            this.caseForm = deepClone(entry.caseForm) || this.caseForm;
+            this.evidenceText = entry.evidenceText || '';
+            this.uploadedFiles = deepClone(entry.uploadedFiles) || [];
+            this.workupResult = deepClone(entry.workupResult);
+            this.documentResult = deepClone(entry.documentResult);
+            this.documentValidation = deepClone(entry.documentValidation);
+            this.messages = deepClone(entry.messages) || this.messages;
+            this.currentView = 'session';
+            this.activeWorkspaceTab = 'analysis';
+            this.recordActivity('历史已恢复', `${entry.title} 已恢复到当前案件。`);
+        },
+        deleteHistory(id) {
+            this.historyEntries = this.historyEntries.filter(entry => entry.id !== id);
+            this.persistHistory();
+        },
+        clearHistory() {
+            this.historyEntries = [];
+            this.activities = [];
+            this.persistHistory();
+        },
+        async withLoading(task) {
+            this.loading = true;
+            this.errorMessage = '';
+            try {
+                await task();
+            } catch (error) {
+                const detail = error?.response?.data?.detail || error.message || '请求失败';
+                this.errorMessage = `处理失败：${detail}`;
+                this.recordActivity('请求失败', String(detail));
+            } finally {
+                this.loading = false;
+            }
+        }
+    }
+}).mount('#app');
+</script>
+</body>
+</html>

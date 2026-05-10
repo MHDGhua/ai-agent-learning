@@ -1,0 +1,68 @@
+# === Python 缓存及编译产物 ===
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+.eggs/
+*.egg
+build/
+dist/
+develop-eggs/
+.installed.cfg
+
+# === 虚拟环境 ===
+venv/
+.venv/
+env/
+.env
+.env.local
+.env.*.local
+
+# === 依赖和包管理锁文件（通常无需大模型通读） ===
+Pipfile.lock
+poetry.lock
+
+# === 数据目录（尤其是大文件） ===
+data/processed_laborlaw/
+data/chroma_db/
+*.csv
+*.json
+*.xlsx
+*.xls
+*.parquet
+*.sqlite
+*.db
+
+# === 文档处理中间文件 ===
+*.docx
+*.pdf
+*.pptx
+*.txt
+
+# === 日志文件 ===
+*.log
+logs/
+
+# === IDE 及编辑器配置 ===
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# === 测试覆盖率及报告 ===
+.coverage
+htmlcov/
+.nyc_output/
+coverage.xml
+*.cover
+
+# === Docker 及部署相关（非核心代码，按需开放） ===
+Dockerfile
+.dockerignore
+docker-compose.yml
+
+# === 脚本目录中仅用历史数据处理（当前可能不再修改） ===
+scripts/
