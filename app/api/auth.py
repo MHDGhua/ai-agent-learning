@@ -1,3 +1,6 @@
+from datetime import datetime, timedelta, timezone
+from typing import Dict, TypedDict
+
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 
 from app.core.persistence import SESSION_COOKIE_NAME, SESSION_COOKIE_SECURE, SESSION_TTL_DAYS
@@ -11,10 +14,55 @@ from app.schemas.auth import (
     SessionResponse,
     UserResponse,
 )
+from app.schemas.workspace import ActivityListResponse
 from app.services.auth_service import login_user, logout_user, register_user, update_password, update_profile
+from app.services.workspace_service import list_workspace_activities
 
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+MAX_LOGIN_FAILURES = 5
+LOGIN_FAILURE_WINDOW = timedelta(minutes=15)
+
+
+class LoginFailureState(TypedDict):
+    count: int
+    first_failed_at: datetime
+
+
+_login_failures: Dict[str, LoginFailureState] = {}
+
+
+def _login_failure_key(request: Request, email: str) -> str:
+    client_host = request.client.host if request.client else "unknown"
+    return f"{email.strip().lower()}:{client_host}"
+
+
+def _get_active_failure_state(key: str) -> LoginFailureState | None:
+    state = _login_failures.get(key)
+    if state is None:
+        return None
+    if datetime.now(timezone.utc) - state["first_failed_at"] > LOGIN_FAILURE_WINDOW:
+        _login_failures.pop(key, None)
+        return None
+    return state
+
+
+def _is_login_limited(key: str) -> bool:
+    state = _get_active_failure_state(key)
+    return bool(state and state["count"] >= MAX_LOGIN_FAILURES)
+
+
+def _record_login_failure(key: str) -> None:
+    state = _get_active_failure_state(key)
+    if state is None:
+        _login_failures[key] = {"count": 1, "first_failed_at": datetime.now(timezone.utc)}
+        return
+    state["count"] += 1
+
+
+def _clear_login_failures(key: str) -> None:
+    _login_failures.pop(key, None)
 
 
 def _set_session_cookie(response: Response, token: str) -> None:
@@ -41,10 +89,19 @@ async def register(request: RegisterRequest, response: Response):
 
 
 @router.post("/login", response_model=AuthResponse)
-async def login(request: LoginRequest, response: Response):
+async def login(request: LoginRequest, response: Response, http_request: Request):
+    failure_key = _login_failure_key(http_request, request.email)
+    if _is_login_limited(failure_key):
+        raise HTTPException(status_code=429, detail="登录失败次数过多，请 15 分钟后再试。")
+
     user, token = login_user(request.model_dump())
     if user is None:
+        _record_login_failure(failure_key)
+        if _is_login_limited(failure_key):
+            raise HTTPException(status_code=429, detail="登录失败次数过多，请 15 分钟后再试。")
         raise HTTPException(status_code=401, detail="邮箱或密码错误。")
+
+    _clear_login_failures(failure_key)
     _set_session_cookie(response, token)
     return AuthResponse(user=UserResponse(**user))
 
@@ -67,6 +124,11 @@ async def session(user=Depends(get_current_user)):  # type: ignore[no-untyped-de
     if user is None:
         return SessionResponse(user=None)
     return SessionResponse(user=UserResponse(**user))
+
+
+@router.get("/activity", response_model=ActivityListResponse)
+async def activity(user=Depends(require_current_user)):  # type: ignore[no-untyped-def]
+    return ActivityListResponse(items=list_workspace_activities(user["id"], limit=20))
 
 
 @router.put("/profile", response_model=AuthResponse)

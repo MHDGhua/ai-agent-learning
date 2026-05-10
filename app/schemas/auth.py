@@ -6,8 +6,8 @@ from pydantic import BaseModel, Field, field_validator
 def _validate_password_strength(value: str) -> str:
     if len(value) < 8:
         raise ValueError("密码至少需要 8 位。")
-    if not re.search(r"[A-Za-z]", value) or not re.search(r"\d", value):
-        raise ValueError("密码必须同时包含字母和数字。")
+    if not re.search(r"[a-z]", value) or not re.search(r"[A-Z]", value) or not re.search(r"\d", value):
+        raise ValueError("密码必须同时包含大写字母、小写字母和数字。")
     return value
 
 
