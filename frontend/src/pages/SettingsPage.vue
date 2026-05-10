@@ -8,7 +8,9 @@
         <h1>个人设置</h1>
         <p class="muted">管理身份标签、密码和当前账户信息。</p>
       </div>
-      <button class="button secondary" type="button" :disabled="submitting" @click="logout">退出登录</button>
+      <button class="button secondary" type="button" :disabled="logoutSubmitting" @click="logout">
+        {{ logoutSubmitting ? "退出中..." : "退出登录" }}
+      </button>
     </section>
 
     <div class="settings-grid">
@@ -32,8 +34,8 @@
               <option v-for="role in roleOptions" :key="role" :value="role">{{ role }}</option>
             </select>
           </label>
-          <button class="button primary" type="submit" :disabled="submitting">
-            {{ submitting ? "保存中..." : "保存资料" }}
+          <button class="button primary" type="submit" :disabled="profileSubmitting">
+            {{ profileSubmitting ? "保存中..." : "保存资料" }}
           </button>
         </form>
       </section>
@@ -60,8 +62,8 @@
             <span>确认新密码</span>
             <input v-model="passwordForm.confirmPassword" type="password" autocomplete="new-password" />
           </label>
-          <button class="button primary" type="submit" :disabled="submitting">
-            {{ submitting ? "更新中..." : "更新密码" }}
+          <button class="button primary" type="submit" :disabled="passwordSubmitting">
+            {{ passwordSubmitting ? "更新中..." : "更新密码" }}
           </button>
         </form>
       </section>
@@ -104,7 +106,9 @@ import { sessionKey } from "../session";
 
 const router = useRouter();
 const session = inject(sessionKey);
-const submitting = ref(false);
+const profileSubmitting = ref(false);
+const passwordSubmitting = ref(false);
+const logoutSubmitting = ref(false);
 const profileError = ref("");
 const profileMessage = ref("");
 const passwordError = ref("");
@@ -157,6 +161,9 @@ function validatePassword() {
 }
 
 async function submitProfile() {
+  if (profileSubmitting.value) {
+    return;
+  }
   profileError.value = "";
   profileMessage.value = "";
   if (!profileForm.fullName.trim()) {
@@ -164,7 +171,7 @@ async function submitProfile() {
     return;
   }
 
-  submitting.value = true;
+  profileSubmitting.value = true;
   try {
     const response = await authApi.updateProfile({
       full_name: profileForm.fullName,
@@ -175,18 +182,21 @@ async function submitProfile() {
   } catch (error) {
     profileError.value = error instanceof ApiError ? error.message : "保存资料失败，请稍后重试。";
   } finally {
-    submitting.value = false;
+    profileSubmitting.value = false;
   }
 }
 
 async function submitPassword() {
+  if (passwordSubmitting.value) {
+    return;
+  }
   passwordError.value = validatePassword();
   passwordMessage.value = "";
   if (passwordError.value) {
     return;
   }
 
-  submitting.value = true;
+  passwordSubmitting.value = true;
   try {
     const response = await authApi.changePassword({
       current_password: passwordForm.currentPassword,
@@ -200,17 +210,20 @@ async function submitPassword() {
   } catch (error) {
     passwordError.value = error instanceof ApiError ? error.message : "更新密码失败，请稍后重试。";
   } finally {
-    submitting.value = false;
+    passwordSubmitting.value = false;
   }
 }
 
 async function logout() {
-  submitting.value = true;
+  if (logoutSubmitting.value) {
+    return;
+  }
+  logoutSubmitting.value = true;
   try {
     await authApi.logout();
   } finally {
     session?.clearUser();
-    submitting.value = false;
+    logoutSubmitting.value = false;
     await router.push("/login");
   }
 }

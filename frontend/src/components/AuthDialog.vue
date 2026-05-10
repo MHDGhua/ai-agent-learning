@@ -24,13 +24,13 @@
 
         <label class="field span-2">
           <span>密码</span>
-          <input v-model="form.password" type="password" placeholder="至少 8 位，包含字母和数字" />
+          <input v-model="form.password" type="password" placeholder="至少 8 位，包含大小写字母和数字" />
         </label>
       </div>
 
       <div class="button-row top-gap">
         <button class="button primary" :disabled="loading" @click="$emit('submit')">
-          {{ mode === "register" ? "创建账户" : "登录" }}
+          {{ loading ? "处理中..." : mode === "register" ? "创建账户" : "登录" }}
         </button>
         <button class="button secondary" @click="$emit('toggle')">
           {{ mode === "register" ? "切换到登录" : "没有账户？去注册" }}

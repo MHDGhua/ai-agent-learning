@@ -25,7 +25,7 @@
 
         <label class="field">
           <span>密码</span>
-          <input v-model="form.password" type="password" autocomplete="current-password" placeholder="至少 8 位" />
+          <input v-model="form.password" type="password" autocomplete="current-password" placeholder="请输入密码" />
         </label>
 
         <div class="auth-options">
