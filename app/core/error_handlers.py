@@ -4,6 +4,7 @@ import traceback
 from typing import Any
 
 from fastapi import FastAPI, Request
+from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -23,7 +24,7 @@ def _error_response(status_code: int, error: str, detail: Any) -> JSONResponse:
         status_code=status_code,
         content={
             "error": error,
-            "detail": detail,
+            "detail": jsonable_encoder(detail),
         },
     )
 
