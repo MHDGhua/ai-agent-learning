@@ -1,7 +1,7 @@
 # PROJECT_STATE
 
 最后更新：2026-05-10
-当前验收版本：v1.2.0
+当前验收版本：v1.3.0
 
 ## 项目定位
 
@@ -9,7 +9,7 @@ L-ERAP-PRO 是面向普通劳动者的重庆劳动仲裁助手，不是专业律
 
 ## 当前产品方向
 
-- 官网采用法睿同画风的浅色首页，工作区使用 `/assistant` 路由承载案件办理。
+- 官网采用同风格原创浅色法律科技首页，工作区使用 `/assistant` 路由承载案件办理。
 - 主界面以案件输入、研判摘要和文书草稿为核心，只展示最关键结论。
 - 二级功能放入侧边栏：历史、助手、文书、重庆参考。
 - 专业术语要转成普通用户能理解的表达。
@@ -54,6 +54,8 @@ L-ERAP-PRO 是面向普通劳动者的重庆劳动仲裁助手，不是专业律
 - 已新增账户资料更新接口 `PUT /auth/profile`，支持修改姓名和身份标签。
 - 已新增旧版浏览器本地记录导入接口 `POST /workspace/import-legacy`，可把旧 `localStorage` 历史案件和活动记录迁入服务端。
 - 前端主页面已拆分为组件与 composable：`frontend/src/components/*` 与 `frontend/src/composables/useWorkspaceApp.js`，不再把所有状态和视图堆在单个 `App.vue`。
+- v1.3.0 已完成：前端路由页面拆分、真实账户与服务端持久化、认证增强、全局异常与请求日志、服务层类型补强、LLM 重试、RAG 降级、官方级首页与使用界面改造。
+- 已从 Git 移除 `data/chroma_db/` Chroma 运行态二进制索引，并加入 `.gitignore`；知识库可通过导入脚本或运行时按需重新生成。
 - 仲裁接口请求/响应模型已从 `app/api/arbitration.py` 拆分到 `app/schemas/arbitration.py`，开始收敛 API 层与 Schema 层职责。
 - 真实账户已补充修改密码接口 `/auth/change-password`，新密码要求至少 8 位且同时包含字母和数字，修改后旧会话全部失效并重新签发当前会话。
 - 前端已接入文书校验结果展示，生成文书后会自动调用 `/arbitration/validate-document`，展示问题、警告和建议。
@@ -85,6 +87,8 @@ L-ERAP-PRO 是面向普通劳动者的重庆劳动仲裁助手，不是专业律
 
 ## 最近验证
 
+- 2026-05-10：`npm run build` 通过；`python -m pytest tests` 通过，51 passed；Playwright 视觉检查 `/` 与 `/assistant` 通过，截图保存到 `.playwright-cli/lerap-official-home.png` 与 `.playwright-cli/lerap-assistant-workspace.png`。
+- 2026-05-10：清理仓库内 `data/chroma_db/` 运行态二进制索引前，确认默认 `ENABLE_CHROMA_RETRIEVAL=false` 且 RAG 有 JSON/processed 文件降级路径。
 - 2026-05-10：`cd frontend && npm run build` 通过，产物已刷新；Playwright 实测 `/`、`/assistant` 和“整理案情并评估”主流程通过，截图已保存为 `output/playwright/farui-home-desktop.png` 与 `output/playwright/farui-workspace-desktop.png`。
 - 2026-05-10：`.\.venv\Scripts\python.exe -m unittest discover -s tests -v` 通过，50 个测试 OK。
 - 2026-05-10：`.\.venv\Scripts\python.exe -m compileall app tests` 通过。
