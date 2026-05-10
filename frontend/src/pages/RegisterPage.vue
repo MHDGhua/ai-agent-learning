@@ -16,7 +16,7 @@
       </div>
 
       <form class="form-stack" @submit.prevent="submitRegister">
-        <div v-if="errorMessage" class="notice error">{{ errorMessage }}</div>
+        <ErrorAlert :message="errorMessage" title="注册失败" @close="errorMessage = ''" />
 
         <label class="field">
           <span>姓名</span>
@@ -61,6 +61,7 @@ import { computed, inject, reactive, ref } from "vue";
 import { RouterLink, useRoute, useRouter } from "vue-router";
 
 import { ApiError, authApi } from "../api";
+import ErrorAlert from "../components/ErrorAlert.vue";
 import { sessionKey } from "../session";
 
 const route = useRoute();

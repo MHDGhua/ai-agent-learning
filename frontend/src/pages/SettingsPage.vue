@@ -1,5 +1,7 @@
 <template>
   <main class="settings-page">
+    <AppTopbar :user="currentUser" />
+
     <section class="settings-hero">
       <div>
         <p class="eyebrow">Personal Settings</p>
@@ -19,7 +21,7 @@
         </div>
         <form class="form-stack" @submit.prevent="submitProfile">
           <div v-if="profileMessage" class="notice success">{{ profileMessage }}</div>
-          <div v-if="profileError" class="notice error">{{ profileError }}</div>
+          <ErrorAlert :message="profileError" title="资料保存失败" @close="profileError = ''" />
           <label class="field">
             <span>姓名</span>
             <input v-model.trim="profileForm.fullName" type="text" autocomplete="name" />
@@ -45,7 +47,7 @@
         </div>
         <form class="form-stack" @submit.prevent="submitPassword">
           <div v-if="passwordMessage" class="notice success">{{ passwordMessage }}</div>
-          <div v-if="passwordError" class="notice error">{{ passwordError }}</div>
+          <ErrorAlert :message="passwordError" title="密码更新失败" @close="passwordError = ''" />
           <label class="field">
             <span>当前密码</span>
             <input v-model="passwordForm.currentPassword" type="password" autocomplete="current-password" />
@@ -96,6 +98,8 @@ import { computed, inject, onMounted, reactive, ref } from "vue";
 import { RouterLink, useRouter } from "vue-router";
 
 import { ApiError, authApi } from "../api";
+import AppTopbar from "../components/AppTopbar.vue";
+import ErrorAlert from "../components/ErrorAlert.vue";
 import { sessionKey } from "../session";
 
 const router = useRouter();

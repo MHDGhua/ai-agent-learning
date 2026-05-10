@@ -1,5 +1,7 @@
 <template>
   <main class="admin-page">
+    <AppTopbar />
+
     <section class="settings-hero">
       <div>
         <p class="eyebrow">System Settings</p>
@@ -80,6 +82,8 @@
 
 <script setup>
 import { reactive, ref } from "vue";
+
+import AppTopbar from "../components/AppTopbar.vue";
 
 const saving = ref(false);
 const message = ref("");

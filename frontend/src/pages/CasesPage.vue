@@ -1,5 +1,7 @@
 <template>
   <main class="cases-page">
+    <AppTopbar />
+
     <section class="settings-hero">
       <div>
         <p class="eyebrow">Case Library</p>
@@ -9,8 +11,8 @@
       <RouterLink class="button primary" to="/assistant">新建案件</RouterLink>
     </section>
 
-    <div v-if="errorMessage" class="notice error">{{ errorMessage }}</div>
-    <div v-if="loading" class="empty-box">案件列表加载中...</div>
+    <ErrorAlert :message="errorMessage" title="案件加载失败" @close="errorMessage = ''" />
+    <LoadingSpinner v-if="loading" label="案件列表加载中..." />
 
     <section v-else-if="cases.length" class="case-grid" aria-label="案件列表">
       <button v-for="item in cases" :key="item.id" class="case-card" type="button" @click="openCase(item.id)">
@@ -27,12 +29,14 @@
       </button>
     </section>
 
-    <section v-else class="empty-state-card">
-      <div class="empty-state-icon">案</div>
-      <h2>还没有保存的案件</h2>
-      <p class="muted">进入案件助手完成一次分析后，可以把事实、证据和文书保存到这里。</p>
-      <RouterLink class="button primary" to="/assistant">进入案件助手</RouterLink>
-    </section>
+    <EmptyState
+      v-else
+      icon="案"
+      title="还没有保存的案件"
+      description="进入案件助手完成一次分析后，可以把事实、证据和文书保存到这里。"
+      action-label="进入案件助手"
+      action-to="/assistant"
+    />
   </main>
 </template>
 
@@ -41,6 +45,10 @@ import { onMounted, ref } from "vue";
 import { RouterLink, useRouter } from "vue-router";
 
 import { ApiError, workspaceApi } from "../api";
+import AppTopbar from "../components/AppTopbar.vue";
+import EmptyState from "../components/EmptyState.vue";
+import ErrorAlert from "../components/ErrorAlert.vue";
+import LoadingSpinner from "../components/LoadingSpinner.vue";
 
 const router = useRouter();
 const cases = ref([]);

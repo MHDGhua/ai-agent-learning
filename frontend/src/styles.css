@@ -1309,9 +1309,16 @@ h3 {
   display: grid;
   align-content: start;
   gap: 22px;
+  padding-top: 0;
   background:
     radial-gradient(circle at 78% -10%, rgba(31, 94, 255, 0.1), transparent 32%),
     var(--app-bg);
+}
+
+.settings-page > .app-topbar,
+.cases-page > .app-topbar,
+.admin-page > .app-topbar {
+  margin-inline: calc(clamp(18px, 4vw, 52px) * -1);
 }
 
 .settings-hero {

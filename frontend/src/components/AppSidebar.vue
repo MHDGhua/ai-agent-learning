@@ -15,10 +15,10 @@
     </div>
 
     <nav class="sidebar-nav" aria-label="工作区模块">
-      <span>历史回看</span>
-      <span class="active">助手中枢</span>
-      <span>文书草稿</span>
-      <span>案件归档</span>
+      <span class="active">案件分析</span>
+      <span>文书生成</span>
+      <span>赔偿计算</span>
+      <span>策略分析</span>
     </nav>
 
     <div class="account-card">
