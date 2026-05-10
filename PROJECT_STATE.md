@@ -1,7 +1,7 @@
 # PROJECT_STATE
 
 最后更新：2026-05-10
-当前验收版本：v1.1.0
+当前验收版本：v1.2.0
 
 ## 项目定位
 
@@ -9,8 +9,9 @@ L-ERAP-PRO 是面向普通劳动者的重庆劳动仲裁助手，不是专业律
 
 ## 当前产品方向
 
-- 主界面以对话区为核心，只展示最关键结论。
-- 二级功能放入侧边栏：案情、风险、文书、重庆参考。
+- 官网采用法睿同画风的浅色首页，工作区使用 `/assistant` 路由承载案件办理。
+- 主界面以案件输入、研判摘要和文书草稿为核心，只展示最关键结论。
+- 二级功能放入侧边栏：历史、助手、文书、重庆参考。
 - 专业术语要转成普通用户能理解的表达。
 - 金额快算作为内部能力使用，不作为独立显眼模块展示。
 - 红蓝对抗默认开启。
@@ -42,6 +43,13 @@ L-ERAP-PRO 是面向普通劳动者的重庆劳动仲裁助手，不是专业律
 
 ## 已完成的重要改动
 
+- 前端已重设计为“官网入口 + 案件助手工作区”双层结构：首页是法睿风格浅色官网、左侧导航和中心输入区，`/assistant` 进入浅色助手办理区。
+- 前台已清理内部工程表达，不再向用户直出 API 基址、流水线状态、耗时毫秒或服务端实现细节；后端 `pipeline_status` 仍保留为接口契约，前端转译为“办理进度”。
+- 前端已把后端 `workflow_stage`、`pipeline_status` 和阶段状态翻译成用户可读文案，避免把内部阶段名直接露给页面。
+- 新增前端源码断言，检查官网能力库文案存在且内部运行细节不出现在可见组件中。
+- 新增 `/assistant` 前端入口路由，首页和工作区都可直接刷新访问。
+- FastAPI 根路径 `/` 已对齐 Vite 构建产物加载：构建后返回 `frontend/dist/index.html`，同域 `/assets/*` 提供静态资源。
+- 新增静默登录态接口 `GET /auth/session`，前端首屏不再用 `/auth/me` 触发未登录 401；`/auth/me` 继续保留为严格认证接口。
 - 认证与工作区逻辑已新增服务层：`app/services/auth_service.py`、`app/services/workspace_service.py`，路由不再直接承担全部持久化调用细节。
 - 已新增账户资料更新接口 `PUT /auth/profile`，支持修改姓名和身份标签。
 - 已新增旧版浏览器本地记录导入接口 `POST /workspace/import-legacy`，可把旧 `localStorage` 历史案件和活动记录迁入服务端。
@@ -77,6 +85,14 @@ L-ERAP-PRO 是面向普通劳动者的重庆劳动仲裁助手，不是专业律
 
 ## 最近验证
 
+- 2026-05-10：`cd frontend && npm run build` 通过，产物已刷新；Playwright 实测 `/`、`/assistant` 和“整理案情并评估”主流程通过，截图已保存为 `output/playwright/farui-home-desktop.png` 与 `output/playwright/farui-workspace-desktop.png`。
+- 2026-05-10：`.\.venv\Scripts\python.exe -m unittest discover -s tests -v` 通过，50 个测试 OK。
+- 2026-05-10：`.\.venv\Scripts\python.exe -m compileall app tests` 通过。
+- 2026-05-10：`git diff --check` 通过。
+- 2026-05-10：`cd frontend && npm run build` 通过，已刷新 `frontend/dist`，根路径加载的构建包使用 `/auth/session` 做静默登录态探测。
+- 2026-05-10：`.\.venv\Scripts\python.exe -m compileall app tests` 通过。
+- 2026-05-10：`.\.venv\Scripts\python.exe -m unittest tests.test_local_arbitration -v` 通过，11 个测试 OK，覆盖 FastAPI 根路径静态资源、静默 session、严格 `/auth/me` 与工作区持久化。
+- 2026-05-10：`cd frontend && npm run build` 通过，官网入口与助手工作区重设计可正常构建。
 - 2026-05-10：`python -m unittest discover -s tests -v` 通过，15 个测试 OK，`tests/test_api_integration.py` 已纳入自动发现。
 - 2026-05-10：`python -m compileall app tests` 通过。
 - 2026-05-10：`python scripts/run_case_matrix.py` 通过，20/20 案例 PASS。

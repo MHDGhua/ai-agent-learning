@@ -54,3 +54,7 @@ class UserResponse(BaseModel):
 
 class AuthResponse(BaseModel):
     user: UserResponse
+
+
+class SessionResponse(BaseModel):
+    user: UserResponse | None = None

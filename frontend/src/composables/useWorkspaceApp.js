@@ -36,6 +36,30 @@ function safeParseLocalStorage(key, fallback) {
   }
 }
 
+function formatReadinessLabel(value) {
+  if (!value) {
+    return "已完成整理";
+  }
+  const text = String(value).trim();
+  const normalized = text.toLowerCase();
+  if (["completed", "complete", "ok", "success", "done"].includes(normalized)) {
+    return "已完成整理";
+  }
+  if (text.includes("补充")) {
+    return "待补充";
+  }
+  if (text.includes("提交")) {
+    return "可提交材料";
+  }
+  if (text.includes("复核") || text.includes("校验")) {
+    return "需复核";
+  }
+  if (text.includes("完成")) {
+    return "已完成整理";
+  }
+  return "已完成整理";
+}
+
 export function useWorkspaceApp() {
   const loading = ref(false);
   const errorMessage = ref("");
@@ -72,7 +96,6 @@ export function useWorkspaceApp() {
   const legacyActivities = ref([]);
   const legacyImported = ref(false);
 
-  const apiBaseHint = computed(() => import.meta.env.VITE_API_BASE_URL || "同源 API");
   const currentTitle = computed(() => {
     const employer = caseForm.applicant_info.employer_name?.trim();
     if (employer) {
@@ -80,7 +103,9 @@ export function useWorkspaceApp() {
     }
     return "当前会话";
   });
-  const readinessLabel = computed(() => workupResult.value?.workflow_stage || "尚未开始");
+  const readinessLabel = computed(() =>
+    workupResult.value ? formatReadinessLabel(workupResult.value.workflow_stage) : "尚未开始"
+  );
   const primaryFinding = computed(
     () => workupResult.value?.analysis?.summary || "先整理案情，再生成结构化判断。"
   );
@@ -276,7 +301,13 @@ export function useWorkspaceApp() {
 
   async function loadSession() {
     try {
-      const response = await authApi.me();
+      const response = await authApi.session();
+      if (!response.user) {
+        user.value = null;
+        profileForm.full_name = "";
+        profileForm.role = "案件申请人";
+        return;
+      }
       user.value = response.user;
       profileForm.full_name = response.user.full_name;
       profileForm.role = response.user.role;
@@ -307,7 +338,7 @@ export function useWorkspaceApp() {
     activeCaseId.value = saved.id;
     await refreshWorkspaceData();
     if (!options.silent) {
-      successMessage.value = "当前会话已保存到服务端。";
+      successMessage.value = "当前案件已保存。";
     }
   }
 
@@ -391,7 +422,7 @@ export function useWorkspaceApp() {
   async function saveCurrentCase() {
     if (!user.value) {
       openAuthDialog("login");
-      errorMessage.value = "保存到服务端前请先登录。";
+      errorMessage.value = "保存案件前请先登录。";
       return;
     }
     await withLoading(async () => {
@@ -404,7 +435,7 @@ export function useWorkspaceApp() {
       const detail = await workspaceApi.getCase(caseId);
       activeCaseId.value = detail.id;
       applySnapshot(detail.snapshot);
-      successMessage.value = "已恢复服务端保存的案件。";
+      successMessage.value = "已恢复保存的案件。";
     });
   }
 
@@ -489,7 +520,6 @@ export function useWorkspaceApp() {
 
   onMounted(async () => {
     loadLegacyData();
-    await loadSession();
   });
 
   return {
@@ -513,7 +543,6 @@ export function useWorkspaceApp() {
     authForm,
     passwordForm,
     profileForm,
-    apiBaseHint,
     currentTitle,
     readinessLabel,
     primaryFinding,
@@ -524,6 +553,7 @@ export function useWorkspaceApp() {
     legacyPreview,
     formatTime,
     inferCaseType,
+    loadSession,
     openAuthDialog,
     closeAuthDialog,
     openProfileDialog,

@@ -1,7 +1,9 @@
 import asyncio
 import os
+import re
 import unittest
 import uuid
+from pathlib import Path
 
 os.environ.setdefault("LLM_PROVIDER", "local")
 os.environ.setdefault("DATABASE_URL", "sqlite:///./data/runtime/test_lerap_app.db")
@@ -41,11 +43,43 @@ class LocalArbitrationTests(unittest.TestCase):
         response = client.get("/")
         self.assertEqual(response.status_code, 200)
         self.assertIn("L-ERAP PRO", response.text)
-        self.assertIn("当前会话", response.text)
+        self.assertIn("法睿风格劳动仲裁首页", response.text)
+        assistant_response = client.get("/assistant")
+        self.assertEqual(assistant_response.status_code, 200)
+        self.assertIn("L-ERAP PRO", assistant_response.text)
+        asset_paths = re.findall(r'(?:src|href)="(/assets/[^"]+)"', response.text)
+        self.assertTrue(asset_paths)
+        for asset_path in asset_paths:
+            asset_response = client.get(asset_path)
+            self.assertEqual(asset_response.status_code, 200)
+
+    def test_frontend_hides_internal_runtime_details(self):
+        frontend_root = Path(__file__).resolve().parents[1] / "frontend" / "src"
+        visible_files = [
+            frontend_root / "App.vue",
+            frontend_root / "components" / "AppSidebar.vue",
+            frontend_root / "components" / "AnalysisPanel.vue",
+            frontend_root / "components" / "CaseFormPanel.vue",
+        ]
+        visible_source = "\n".join(path.read_text(encoding="utf-8") for path in visible_files)
+        for forbidden in ("API 基址", "API Base", "同源 API", "同域 API", "流水线状态", "elapsed_ms"):
+            self.assertNotIn(forbidden, visible_source)
+        self.assertIn("法睿风格首页", visible_source)
+        self.assertIn("中心输入区", visible_source)
+        self.assertIn("办理进度", visible_source)
+        workspace_source = (frontend_root / "composables" / "useWorkspaceApp.js").read_text(encoding="utf-8")
+        self.assertIn("authApi.session()", workspace_source)
+        self.assertNotIn("authApi.me()", workspace_source)
 
     def test_auth_and_workspace_persist_on_server(self):
         client = TestClient(create_app())
         email = f"worker-{uuid.uuid4().hex[:8]}@example.com"
+
+        anonymous_me = client.get("/auth/me")
+        self.assertEqual(anonymous_me.status_code, 401)
+        anonymous_session = client.get("/auth/session")
+        self.assertEqual(anonymous_session.status_code, 200)
+        self.assertIsNone(anonymous_session.json()["user"])
 
         register_res = client.post(
             "/auth/register",
@@ -62,6 +96,9 @@ class LocalArbitrationTests(unittest.TestCase):
         me_res = client.get("/auth/me")
         self.assertEqual(me_res.status_code, 200)
         self.assertEqual(me_res.json()["user"]["email"], email)
+        session_res = client.get("/auth/session")
+        self.assertEqual(session_res.status_code, 200)
+        self.assertEqual(session_res.json()["user"]["email"], email)
 
         profile_res = client.put(
             "/auth/profile",
@@ -188,6 +225,9 @@ class LocalArbitrationTests(unittest.TestCase):
 
         me_after_logout = client.get("/auth/me")
         self.assertEqual(me_after_logout.status_code, 401)
+        session_after_logout = client.get("/auth/session")
+        self.assertEqual(session_after_logout.status_code, 200)
+        self.assertIsNone(session_after_logout.json()["user"])
 
     def test_llm_local_mode_basic(self):
         client = LLMClient()

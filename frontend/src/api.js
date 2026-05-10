@@ -57,6 +57,9 @@ export const authApi = {
   me() {
     return apiRequest("/auth/me");
   },
+  session() {
+    return apiRequest("/auth/session");
+  },
   updateProfile(body) {
     return apiRequest("/auth/profile", {
       method: "PUT",

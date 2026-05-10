@@ -8,6 +8,7 @@ from app.schemas.auth import (
     PasswordChangeRequest,
     ProfileUpdateRequest,
     RegisterRequest,
+    SessionResponse,
     UserResponse,
 )
 from app.services.auth_service import login_user, logout_user, register_user, update_password, update_profile
@@ -57,10 +58,15 @@ async def logout(request: Request, response: Response, user=Depends(get_current_
 
 
 @router.get("/me", response_model=AuthResponse)
-async def me(user=Depends(get_current_user)):  # type: ignore[no-untyped-def]
-    if user is None:
-        raise HTTPException(status_code=401, detail="未登录。")
+async def me(user=Depends(require_current_user)):  # type: ignore[no-untyped-def]
     return AuthResponse(user=UserResponse(**user))
+
+
+@router.get("/session", response_model=SessionResponse)
+async def session(user=Depends(get_current_user)):  # type: ignore[no-untyped-def]
+    if user is None:
+        return SessionResponse(user=None)
+    return SessionResponse(user=UserResponse(**user))
 
 
 @router.put("/profile", response_model=AuthResponse)

@@ -19,7 +19,6 @@ from app.api.workspace import router as workspace_router
 from app.api.webhooks import register_routes
 from app.core.persistence import ensure_database
 from app.config.settings import VERSION
-from app.services.api_factory import APIFactory
 from app.utils.logger import setup_logger
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -61,10 +60,20 @@ def register_frontend(app: FastAPI) -> None:
         return
 
     static_dir = FRONTEND_DIST_DIR if FRONTEND_DIST_DIR.exists() else FRONTEND_DIR
+    assets_dir = static_dir / "assets"
+    if assets_dir.exists():
+        app.mount("/assets", StaticFiles(directory=str(assets_dir)), name="frontend-assets")
+    elif (FRONTEND_DIR / "src").exists():
+        app.mount("/src", StaticFiles(directory=str(FRONTEND_DIR / "src")), name="frontend-src")
+
     app.mount("/frontend", StaticFiles(directory=str(static_dir)), name="frontend")
 
     @app.get("/", include_in_schema=False)
     async def frontend_index():
+        return FileResponse(FRONTEND_INDEX)
+
+    @app.get("/assistant", include_in_schema=False)
+    async def frontend_assistant():
         return FileResponse(FRONTEND_INDEX)
 
 
@@ -96,13 +105,6 @@ def create_app() -> FastAPI:
     register_routes(app)
     register_healthcheck(app)
     register_frontend(app)
-    
-    # 初始化API工厂
-    api_factory = APIFactory()
-    
-    # 可以在这里添加API工厂的初始化逻辑
-    print("API工厂已初始化")
-    print(f"可用API: {api_factory.get_available_apis()}")
     
     return app
 

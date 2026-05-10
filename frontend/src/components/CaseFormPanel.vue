@@ -1,23 +1,35 @@
 <template>
-  <section class="panel">
+  <section class="panel intake-panel">
     <div class="panel-head">
       <div>
         <p class="eyebrow">案件输入</p>
         <h3>先把事实说清楚</h3>
       </div>
       <span class="status-pill" :class="workupResult ? 'good' : 'soft'">
-        {{ workupResult ? "已分析" : "未分析" }}
+        {{ workupResult ? "已整理" : "待整理" }}
       </span>
+    </div>
+
+    <div class="intro-card">
+      <div>
+        <strong>把事实、目标和证据一次放进来</strong>
+        <p class="muted">右侧会自动整理成可复核的分析和文书草稿，适合继续补充和回看。</p>
+      </div>
+      <div class="intro-tags" aria-label="输入顺序建议">
+        <span>先事实</span>
+        <span>再目标</span>
+        <span>后证据</span>
+      </div>
     </div>
 
     <div v-if="errorMessage" class="notice error">{{ errorMessage }}</div>
     <div v-if="successMessage" class="notice success">{{ successMessage }}</div>
     <div v-if="!user" class="notice">
-      现在可以直接试跑分析；如果希望保存历史、恢复草稿和跨设备使用，请先登录真实账户。
+      可以先直接整理案情；如果希望保存历史、恢复草稿和跨设备继续办理，请先登录账户。
     </div>
 
     <div class="form-grid">
-      <label class="field span-2">
+      <label class="field span-2 hero-field">
         <span>案情事实</span>
         <textarea
           v-model="caseForm.facts"
@@ -83,14 +95,14 @@
       </label>
 
       <label class="field">
-        <span>系统识别的案件类型</span>
+        <span>当前判断的案件类型</span>
         <input :value="caseType" type="text" readonly />
       </label>
     </div>
 
-    <div class="button-row top-gap">
+    <div class="button-row top-gap action-row">
       <button class="button primary" :disabled="loading || !caseForm.facts.trim()" @click="$emit('analyze')">
-        {{ loading ? "处理中..." : "整理案情并评估" }}
+        {{ loading ? "整理中..." : "整理案情并评估" }}
       </button>
       <button class="button secondary" :disabled="loading || !workupResult" @click="$emit('generate-document')">
         生成文书
@@ -114,3 +126,116 @@ defineProps({
 
 defineEmits(["update:evidence-text", "update:document-type", "analyze", "generate-document"]);
 </script>
+
+<style scoped>
+.intake-panel {
+  padding: 20px;
+  border-radius: 18px;
+  border-color: rgba(221, 213, 200, 0.9);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(251, 247, 239, 0.94)),
+    var(--surface);
+  box-shadow: 0 20px 56px rgba(31, 36, 51, 0.07);
+}
+
+.panel-head {
+  gap: 16px;
+}
+
+.panel-head h3 {
+  font-size: clamp(24px, 2.8vw, 34px);
+}
+
+.intro-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 18px;
+  border: 1px solid rgba(31, 94, 255, 0.12);
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(31, 94, 255, 0.06), rgba(255, 255, 255, 0.9));
+}
+
+.intro-card strong {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 16px;
+}
+
+.intro-tags {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.intro-tags span {
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 10px;
+  border-radius: 999px;
+  color: var(--brand-2);
+  background: rgba(31, 94, 255, 0.08);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.form-grid {
+  gap: 16px;
+}
+
+.field {
+  gap: 8px;
+}
+
+.field span {
+  color: #5a6479;
+}
+
+.hero-field textarea {
+  min-height: 240px;
+  border-radius: 16px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 1)),
+    var(--surface-strong);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.field input,
+.field select,
+.field textarea {
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+}
+
+.field input[readonly] {
+  color: var(--brand-2);
+  background: rgba(31, 94, 255, 0.05);
+}
+
+.action-row {
+  padding-top: 4px;
+}
+
+.action-row .button {
+  min-width: 180px;
+}
+
+@media (max-width: 940px) {
+  .intro-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .intro-tags {
+    justify-content: flex-start;
+  }
+
+  .action-row .button {
+    min-width: 0;
+  }
+}
+</style>
