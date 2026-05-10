@@ -2061,6 +2061,61 @@ h3 {
   }
 }
 
+@media (max-width: 768px) {
+  .auth-page {
+    padding: 0;
+  }
+
+  .auth-card,
+  .register-card {
+    width: 100%;
+    min-height: 100vh;
+    align-content: center;
+    border-width: 0;
+    border-radius: 0;
+  }
+
+  .settings-page,
+  .cases-page,
+  .admin-page {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .settings-page > .app-topbar,
+  .cases-page > .app-topbar,
+  .admin-page > .app-topbar {
+    margin-inline: -16px;
+  }
+
+  .settings-hero,
+  .auth-options,
+  .case-card-head,
+  .case-card-foot {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .settings-hero .button {
+    width: 100%;
+  }
+
+  .settings-grid,
+  .admin-grid,
+  .case-grid,
+  .site-signals {
+    grid-template-columns: 1fr;
+  }
+
+  .account-info-list div {
+    display: grid;
+  }
+
+  .account-info-list dd {
+    text-align: left;
+  }
+}
+
 @media (max-width: 560px) {
   .site-header,
   .site-main {
@@ -2095,5 +2150,55 @@ h3 {
   .site-prompt-actions .button,
   .site-prompt-head .site-history-button {
     width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  body {
+    min-width: 0;
+  }
+
+  .auth-card,
+  .not-found-card,
+  .panel,
+  .settings-hero,
+  .case-card,
+  .empty-state-card {
+    border-radius: 16px;
+  }
+
+  .auth-page .auth-card {
+    border-radius: 0;
+  }
+
+  .auth-copy h1,
+  .settings-hero h1,
+  .not-found-card h1 {
+    font-size: 32px;
+    letter-spacing: -0.04em;
+  }
+
+  .settings-page,
+  .cases-page,
+  .admin-page,
+  .not-found-page {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .settings-page > .app-topbar,
+  .cases-page > .app-topbar,
+  .admin-page > .app-topbar {
+    margin-inline: -12px;
+  }
+
+  .button-row,
+  .site-header-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .case-card {
+    padding: 16px;
   }
 }
