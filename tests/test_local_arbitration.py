@@ -43,7 +43,7 @@ class LocalArbitrationTests(unittest.TestCase):
         response = client.get("/")
         self.assertEqual(response.status_code, 200)
         self.assertIn("L-ERAP PRO", response.text)
-        self.assertIn("法睿风格劳动仲裁首页", response.text)
+        self.assertIn("重庆劳动法智能体", response.text)
         assistant_response = client.get("/assistant")
         self.assertEqual(assistant_response.status_code, 200)
         self.assertIn("L-ERAP PRO", assistant_response.text)
@@ -77,7 +77,7 @@ class LocalArbitrationTests(unittest.TestCase):
         visible_source = "\n".join(path.read_text(encoding="utf-8") for path in visible_files)
         for forbidden in ("API 基址", "API Base", "同源 API", "同域 API", "流水线状态", "elapsed_ms"):
             self.assertNotIn(forbidden, visible_source)
-        self.assertIn("法睿风格首页", visible_source)
+        self.assertIn("重庆劳动法智能体", visible_source)
         self.assertIn("中心输入区", visible_source)
         self.assertIn("办理进度", visible_source)
         workspace_source = (frontend_root / "composables" / "useWorkspaceApp.js").read_text(encoding="utf-8")

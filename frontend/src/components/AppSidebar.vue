@@ -1,24 +1,23 @@
 <template>
-  <aside class="sidebar">
+  <aside id="workspace-history" class="sidebar farui-sidebar">
     <div class="brand-card">
       <div class="brand-mark">L</div>
       <div class="brand-copy">
         <p class="eyebrow">L-ERAP PRO</p>
-        <h1>重庆劳动仲裁助手</h1>
-        <p class="muted">浅色工作台，围绕历史、助手和文书继续办理。</p>
+        <h1>劳动法专家</h1>
+        <p class="muted">重庆劳动仲裁智能工作台</p>
         <div class="brand-chips" aria-label="工作台语义">
-          <span>历史</span>
-          <span>助手</span>
-          <span>文书</span>
+          <span>新版</span>
+          <span>可信</span>
         </div>
       </div>
     </div>
 
     <nav class="sidebar-nav" aria-label="工作区模块">
-      <span class="active">案件分析</span>
-      <span>文书生成</span>
-      <span>赔偿计算</span>
-      <span>策略分析</span>
+      <span class="active"><i>□</i> 助理</span>
+      <span><i>◇</i> 知识中心</span>
+      <span><i>✧</i> 技能中心</span>
+      <span><i>⌘</i> 应用中心</span>
     </nav>
 
     <div class="account-card">
@@ -89,6 +88,11 @@
       </div>
       <div v-else class="empty-box">还没有案件办理记录。</div>
     </div>
+
+    <div class="sidebar-bottom-links">
+      <button type="button" @click="$emit('new-case')">↔ 切换至旧版视图</button>
+      <button type="button" @click="$emit('refresh')">♢ 产品动态</button>
+    </div>
   </aside>
 </template>
 
@@ -118,82 +122,112 @@ defineEmits([
 </script>
 
 <style scoped>
-.sidebar {
-  gap: 14px;
-  padding: 16px 14px 14px;
+.farui-sidebar {
+  gap: 18px;
+  padding: 18px 16px;
+  border-right-color: rgba(113, 132, 166, 0.16);
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(246, 240, 230, 0.92)),
-    rgba(238, 241, 247, 0.92);
+    linear-gradient(180deg, rgba(247, 249, 255, 0.96), rgba(241, 246, 255, 0.96)),
+    #f3f6fd;
 }
 
 .brand-card,
 .account-card,
 .migration-card,
 .sidebar-section {
-  border: 1px solid rgba(221, 213, 200, 0.78);
-  background: rgba(255, 255, 255, 0.82);
-  box-shadow: 0 14px 34px rgba(31, 36, 51, 0.06);
+  border: 1px solid rgba(95, 124, 177, 0.12);
+  background: rgba(255, 255, 255, 0.64);
+  box-shadow: none;
 }
 
 .brand-card {
-  align-items: start;
+  grid-template-columns: 34px 1fr;
+  align-items: center;
   gap: 12px;
-  padding: 15px;
+  padding: 0 2px 2px;
+  border: 0;
+  background: transparent;
 }
 
 .brand-copy {
   min-width: 0;
   display: grid;
-  gap: 8px;
+  gap: 7px;
 }
 
 .brand-copy h1 {
-  font-size: 20px;
+  font-family: var(--font-body);
+  font-size: 17px;
   line-height: 1.18;
-  letter-spacing: -0.04em;
+  letter-spacing: -0.02em;
+}
+
+.brand-mark {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  color: #ffffff;
+  background: linear-gradient(140deg, #6f6bff, #4f7cff 60%, #4bb7ff);
+  box-shadow: 0 12px 28px rgba(67, 105, 255, 0.22);
+  font-size: 17px;
 }
 
 .brand-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 7px;
 }
 
 .brand-chips span {
-  min-height: 26px;
+  min-height: 22px;
   display: inline-flex;
   align-items: center;
-  padding: 0 10px;
+  padding: 0 8px;
   border-radius: 999px;
-  color: var(--brand-2);
-  background: rgba(31, 94, 255, 0.08);
-  font-size: 12px;
+  color: #52607a;
+  background: rgba(77, 121, 255, 0.08);
+  font-size: 11px;
   font-weight: 800;
 }
 
 .sidebar-nav {
-  gap: 8px;
+  gap: 12px;
 }
 
 .sidebar-nav span {
-  min-height: 40px;
-  padding: 0 13px;
-  border-radius: 11px;
-  color: #566175;
-  background: rgba(255, 255, 255, 0.65);
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 8px;
+  border-radius: 10px;
+  color: #111827;
+  background: transparent;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.sidebar-nav span i {
+  width: 20px;
+  color: #1f2937;
+  font-style: normal;
+  text-align: center;
 }
 
 .sidebar-nav span.active {
-  color: var(--brand);
-  border-color: rgba(31, 94, 255, 0.14);
-  background: rgba(31, 94, 255, 0.08);
+  color: #5b55ff;
+  border-color: transparent;
+  background: rgba(255, 255, 255, 0.34);
   box-shadow: none;
 }
 
 .account-card,
-.migration-card {
+.migration-card,
+.sidebar-section {
   display: grid;
-  gap: 14px;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 16px;
 }
 
 .account-line {
@@ -216,6 +250,7 @@ defineEmits([
 
 .saved-list,
 .activity-list {
+  display: grid;
   gap: 10px;
 }
 
@@ -229,7 +264,7 @@ defineEmits([
   min-height: 78px;
   padding: 13px 14px;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.94);
+  background: rgba(255, 255, 255, 0.82);
 }
 
 .saved-main strong {
@@ -247,7 +282,7 @@ defineEmits([
 
 .activity-card {
   padding: 14px;
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.72);
 }
 
 .activity-card strong {
@@ -261,10 +296,46 @@ defineEmits([
 }
 
 .empty-box {
-  background: rgba(248, 244, 236, 0.72);
+  background: rgba(246, 249, 255, 0.82);
 }
 
 .section-head h2 {
   font-size: 15px;
+}
+
+.sidebar-bottom-links {
+  margin-top: auto;
+  display: grid;
+  gap: 14px;
+  padding: 8px 6px;
+}
+
+.sidebar-bottom-links button {
+  min-height: 28px;
+  border: 0;
+  padding: 0;
+  color: #24314b;
+  background: transparent;
+  text-align: left;
+  font-weight: 700;
+}
+
+@media (max-width: 1240px) {
+  .farui-sidebar {
+    min-height: auto;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .brand-card,
+  .sidebar-nav,
+  .sidebar-bottom-links {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 720px) {
+  .farui-sidebar {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

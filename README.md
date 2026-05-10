@@ -79,7 +79,7 @@ npm run dev
 
 - 前端源码入口位于 `frontend/src/App.vue`
 - 前端状态主逻辑位于 `frontend/src/composables/useWorkspaceApp.js`
-- 默认首页是“法律科技能力库”官网入口，点击“进入案件助手”或访问 `/#assistant` 可进入办理工作区
+- 默认首页是“重庆劳动法智能体”官网入口，点击“立即使用”或访问 `/assistant` 可进入办理工作区
 - 执行 `npm run build` 后，FastAPI 根路径 `/` 会返回 `frontend/dist/index.html`，并通过同域 `/assets/*` 加载 Vite 构建资源
 - API 默认走同源，也可通过 `VITE_API_BASE_URL` 指向独立后端地址
 - 首屏静默登录态探测使用 `GET /auth/session`；`GET /auth/me` 保留为严格接口，未登录会返回 401

@@ -1,136 +1,138 @@
 <template>
-  <div class="site-shell">
-    <header class="site-header">
-      <RouterLink class="site-brand" to="/">
-        <span class="site-logo">L</span>
+  <div class="official-home">
+    <header class="official-nav">
+      <RouterLink class="official-brand" to="/" aria-label="返回首页">
+        <span class="official-logo">L</span>
         <span>
           <strong>L-ERAP PRO</strong>
-          <small>法睿风格首页 · 重庆劳动仲裁</small>
+          <small>重庆劳动法专家系统</small>
         </span>
       </RouterLink>
-      <div class="site-header-actions">
-        <button class="site-history-button" type="button" @click="scrollToSection('history')">历史</button>
-        <button class="button secondary" type="button" @click="enterWorkspace">进入工作区</button>
-      </div>
+
+      <button class="official-upgrade" type="button" @click="enterWorkspace">
+        <span aria-hidden="true">●</span>
+        劳动法能力库已升级！切换至新版
+      </button>
+
+      <nav class="official-links" aria-label="官网导航">
+        <button type="button" @click="scrollToSection('plans')">购买方案</button>
+        <button type="button" @click="scrollToSection('api')">API接入</button>
+        <button type="button" @click="scrollToSection('help')">帮助中心</button>
+        <RouterLink :to="app.user ? '/assistant' : '/login'">
+          {{ app.user ? "进入工作台" : "登录/注册" }}
+        </RouterLink>
+      </nav>
     </header>
 
-    <main class="site-main">
-      <aside class="site-rail" aria-label="快速入口">
-        <div class="site-rail-head">
-          <p class="section-kicker">Quick Access</p>
-          <h2>左侧导航</h2>
+    <main class="official-main">
+      <section class="official-hero" aria-labelledby="home-title" aria-label="中心输入区入口">
+        <p class="official-kicker">L-ERAP Legal AI</p>
+        <h1 id="home-title">重庆劳动法智能体，让仲裁准备更简单</h1>
+        <p class="official-subtitle">
+          面向劳动者、律师和企业合规团队，把案情梳理、证据审查、赔偿计算与文书草稿整合进一个可信工作流。
+        </p>
+
+        <div class="official-actions">
+          <button class="official-primary" type="button" @click="enterWorkspace">立即使用</button>
+          <button class="official-play" type="button" @click="previewPrompt">
+            <span aria-hidden="true">▶</span>
+            查看使用示例
+          </button>
         </div>
-        <button
-          v-for="item in siteRailItems"
-          :key="item.title"
-          type="button"
-          class="site-rail-item"
-          @click="handleRailItem(item)"
-        >
-          <span class="rail-icon">{{ item.icon }}</span>
-          <span class="rail-copy">
-            <strong>{{ item.title }}</strong>
-            <small>{{ item.description }}</small>
-          </span>
-        </button>
-      </aside>
-
-      <section class="site-center">
-        <div class="site-hero">
-          <p class="section-kicker">Farui-style legal home</p>
-          <h1>把案情、类案和文书放进同一个输入框</h1>
-          <p>
-            浅色留白、左侧导航、中心输入、顶部历史入口。先输入问题，再进入工作区继续整理事实、证据和文书。
-          </p>
-        </div>
-
-        <section class="site-prompt-card" aria-label="中心输入区">
-          <div class="site-prompt-head">
-            <div>
-              <p class="section-kicker">AI Prompt</p>
-              <h2>输入案情、问题或文书要求</h2>
-            </div>
-            <button class="site-history-button compact" type="button" @click="scrollToSection('history')">
-              历史
-            </button>
-          </div>
-          <textarea
-            v-model="sitePrompt"
-            class="site-prompt"
-            placeholder="例如：我在重庆某公司工作两年，最近被拖欠工资并被迫离职，手里有劳动合同、考勤和工资流水。"
-          />
-          <div class="site-prompt-actions">
-            <button class="button primary" type="button" @click="submitHomePrompt">开始分析</button>
-            <button class="button secondary" type="button" @click="enterWorkspace">进入工作区</button>
-          </div>
-          <div class="site-prompt-chips" aria-label="常用提示词">
-            <button v-for="prompt in promptPresets" :key="prompt" type="button" @click="applyPrompt(prompt)">
-              {{ prompt }}
-            </button>
-          </div>
-        </section>
-
-        <section class="site-signals" aria-label="能力卡片">
-          <article v-for="card in siteSignals" :key="card.title" class="site-signal-card">
-            <span class="signal-icon">{{ card.icon }}</span>
-            <strong>{{ card.title }}</strong>
-            <p>{{ card.description }}</p>
-          </article>
-        </section>
       </section>
 
-      <aside class="site-history" aria-label="历史与入口" id="history">
-        <section class="history-panel">
-          <div class="site-section-head">
-            <div>
-              <p class="section-kicker">History</p>
-              <h2>最近案件</h2>
-            </div>
-            <span>{{ recentCases.length }}</span>
+      <section class="blueprint-stage" aria-label="法律科技能力库示意图">
+        <div class="blueprint-grid">
+          <div class="blueprint-emblem" aria-hidden="true">
+            <span></span>
+            <span></span>
+            <span></span>
           </div>
-          <div v-if="recentCases.length" class="history-list">
-            <button
-              v-for="item in recentCases"
-              :key="item.id"
-              type="button"
-              class="history-item"
-              @click="openSavedCase(item.id)"
-            >
-              <strong>{{ getCaseTitle(item) }}</strong>
-              <span>{{ getCaseMeta(item) }}</span>
-              <small>{{ getCaseTime(item) || "刚刚" }}</small>
-            </button>
-          </div>
-          <div v-else class="empty-box">
-            登录后可在这里看到最近保存的案件，点击后可直接回到工作区继续处理。
-          </div>
-        </section>
 
-        <section class="history-panel">
-          <div class="site-section-head">
-            <div>
-              <p class="section-kicker">Activity</p>
-              <h2>最近动作</h2>
+          <article class="blueprint-document">
+            <div class="document-toolbar">
+              <strong>[ 劳动仲裁助手 ]</strong>
+              <span>→</span>
             </div>
-            <span>{{ recentActivities.length }}</span>
-          </div>
-          <div v-if="recentActivities.length" class="history-list compact">
-            <div v-for="item in recentActivities" :key="item.id || item.created_at || item.title" class="activity-tile">
-              <strong>{{ getActivityTitle(item) }}</strong>
-              <span>{{ getActivityMeta(item) }}</span>
+            <div class="document-lines">
+              <span class="line strong"></span>
+              <span class="line strong short"></span>
+              <span class="line"></span>
+              <span class="line"></span>
+              <span class="line medium"></span>
+              <span class="line tiny"></span>
             </div>
-          </div>
-          <div v-else class="empty-box">
-            当前没有可展示的历史动作。进入工作区并完成分析或保存后，这里会自动出现记录。
-          </div>
-        </section>
-      </aside>
+            <div class="document-section">
+              <strong>快速抽取法律场景</strong>
+              <span></span>
+              <span></span>
+            </div>
+            <div class="document-section">
+              <strong>争议焦点与证据缺口</strong>
+              <span></span>
+              <span></span>
+            </div>
+            <div class="document-section">
+              <strong>文书草稿与复核建议</strong>
+              <span></span>
+              <span></span>
+            </div>
+          </article>
+
+          <aside class="blueprint-book" aria-hidden="true">
+            <span></span>
+            <small>LAW</small>
+          </aside>
+
+          <article class="blueprint-card risk-card">
+            <span></span>
+            <strong>审查到 8 项高频风险</strong>
+            <p>时效、管辖、证据链、请求金额</p>
+          </article>
+
+          <article class="blueprint-card statute-card">
+            <span></span>
+            <strong>根据《劳动合同法》</strong>
+            <p>输出可复核依据与重庆本地参考</p>
+          </article>
+
+          <article class="blueprint-tag">关于劳动报酬、违法解除、加班费的争议焦点</article>
+          <div class="blueprint-pen" aria-hidden="true"></div>
+          <div class="blueprint-ticket" aria-hidden="true"></div>
+        </div>
+      </section>
+
+      <section class="official-capabilities" aria-label="核心能力">
+        <article v-for="item in capabilityCards" :key="item.title" class="capability-card">
+          <span>{{ item.icon }}</span>
+          <strong>{{ item.title }}</strong>
+          <p>{{ item.description }}</p>
+        </article>
+      </section>
+
+      <section class="official-info-grid">
+        <article id="plans" class="official-info-card">
+          <p class="official-kicker">Plans</p>
+          <h2>个人免费整理，团队可扩展持久化案件库</h2>
+          <p>当前版本支持真实账户、服务端保存、历史活动记录和案件快照，后续可接入团队席位与审阅流。</p>
+        </article>
+        <article id="api" class="official-info-card">
+          <p class="official-kicker">API</p>
+          <h2>保留 API 接入空间</h2>
+          <p>后端 FastAPI 已拆分认证、工作区、仲裁分析和文书生成接口，便于接入企业内部系统。</p>
+        </article>
+        <article id="help" class="official-info-card">
+          <p class="official-kicker">Help</p>
+          <h2>先输入案情，再进入工作台复核</h2>
+          <p>如果不确定怎么描述，可以从拖欠工资、违法解除、加班费、工伤待遇等示例开始。</p>
+        </article>
+      </section>
     </main>
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted, proxyRefs, ref } from "vue";
+import { onMounted, proxyRefs } from "vue";
 import { RouterLink, useRouter } from "vue-router";
 
 import { useWorkspaceApp } from "../composables/useWorkspaceApp";
@@ -139,133 +141,45 @@ const PENDING_HOME_PROMPT_KEY = "lerap_pending_home_prompt";
 
 const router = useRouter();
 const app = proxyRefs(useWorkspaceApp());
-const sitePrompt = ref("");
 
-const promptPresets = [
-  "拖欠工资怎么举证",
-  "被辞退怎么申请仲裁",
-  "加班费怎么计算",
-  "工伤待遇怎么主张",
-];
+const samplePrompt =
+  "我在重庆某公司工作两年，最近被拖欠工资并被迫离职，手里有劳动合同、考勤和工资流水。";
 
-const siteRailItems = [
+const capabilityCards = [
   {
-    icon: "问",
-    title: "案情输入",
-    description: "把问题写成一句自然语言。",
-    prompt: "我在重庆某公司工作，最近被拖欠工资，想申请劳动仲裁。",
+    icon: "顾",
+    title: "劳动法顾问",
+    description: "把自然语言案情转成争议焦点、仲裁请求和下一步行动建议。",
   },
   {
-    icon: "析",
-    title: "风险分析",
-    description: "看时效、管辖和证据缺口。",
-    prompt: "请帮我分析劳动仲裁的时效、证据缺口和胜诉风险。",
+    icon: "审",
+    title: "证据审查",
+    description: "检查劳动合同、工资流水、考勤、聊天记录等证据是否能支撑请求。",
+  },
+  {
+    icon: "搜",
+    title: "重庆本地参考",
+    description: "优先组织重庆劳动仲裁常见规则、类案方向与公开参考。",
   },
   {
     icon: "文",
-    title: "文书草稿",
-    description: "生成申请书、清单和补正文案。",
-    prompt: "请生成劳动仲裁申请书和证据清单草稿。",
-  },
-  {
-    icon: "案",
-    title: "案件工作区",
-    description: "进入完整工作台继续处理。",
-    action: "workspace",
-  },
-  {
-    icon: "历",
-    title: "历史记录",
-    description: "快速定位最近的案件。",
-    action: "history",
-  },
-];
-
-const siteSignals = [
-  {
-    icon: "01",
-    title: "类案检索",
-    description: "把争议焦点压缩成清晰问题，方便后续进入工作区查证和归纳。",
-  },
-  {
-    icon: "02",
-    title: "风险分析",
-    description: "输出时效、管辖、证据缺口和下一步动作，避免只看单方结论。",
-  },
-  {
-    icon: "03",
     title: "文书生成",
-    description: "生成仲裁申请书、证据清单与补充说明，并保留到工作区继续编辑。",
+    description: "生成仲裁申请书、证据清单、调解申请书并保留可编辑草稿。",
+  },
+  {
+    icon: "算",
+    title: "赔偿计算",
+    description: "围绕工资、经济补偿、违法解除、年休假等请求进行金额估算。",
   },
 ];
 
-const recentCases = computed(() => (Array.isArray(app.savedCases) ? app.savedCases.slice(0, 3) : []));
-const recentActivities = computed(() => (Array.isArray(app.activities) ? app.activities.slice(0, 4) : []));
-
-function getCaseTitle(item) {
-  return item?.title?.trim() || "未命名案件";
-}
-
-function getCaseMeta(item) {
-  return item?.case_type || item?.readiness || "劳动争议";
-}
-
-function getCaseTime(item) {
-  return app.formatTime(
-    item?.updated_at || item?.updatedAt || item?.created_at || item?.createdAt || item?.last_modified_at || ""
-  );
-}
-
-function getActivityTitle(item) {
-  return item?.title || item?.action || item?.name || "案件动作";
-}
-
-function getActivityMeta(item) {
-  return item?.description || item?.detail || app.formatTime(item?.created_at || item?.createdAt || "");
-}
-
-function applyPrompt(prompt) {
-  sitePrompt.value = prompt;
-}
-
-function handleRailItem(item) {
-  if (item.action === "workspace") {
-    void enterWorkspace();
-    return;
-  }
-  if (item.action === "history") {
-    scrollToSection("history");
-    return;
-  }
-  applyPrompt(item.prompt);
-}
-
-function persistPromptForWorkspace() {
-  const prompt = sitePrompt.value.trim();
-  if (!prompt) {
-    return;
-  }
-  window.sessionStorage.setItem(PENDING_HOME_PROMPT_KEY, prompt);
-}
-
-async function submitHomePrompt() {
-  persistPromptForWorkspace();
-  await enterWorkspace();
+function previewPrompt() {
+  window.sessionStorage.setItem(PENDING_HOME_PROMPT_KEY, samplePrompt);
+  void enterWorkspace();
 }
 
 async function enterWorkspace() {
-  persistPromptForWorkspace();
   await router.push({ name: "assistant" });
-}
-
-async function openSavedCase(caseId) {
-  await router.push({ name: "assistant", query: { caseId } });
-}
-
-function syncPromptFromWorkspace() {
-  if (app.caseForm.facts) {
-    sitePrompt.value = app.caseForm.facts;
-  }
 }
 
 function scrollToSection(id) {
@@ -274,6 +188,5 @@ function scrollToSection(id) {
 
 onMounted(async () => {
   await app.loadSession();
-  syncPromptFromWorkspace();
 });
 </script>

@@ -1,5 +1,5 @@
 <template>
-  <div class="app-shell">
+  <div class="assistant-farui-shell">
     <AppSidebar
       :user="app.user"
       :loading="app.loading"
@@ -20,70 +20,120 @@
       @import-legacy="app.importLegacyData"
     />
 
-    <main class="main-shell">
-      <header class="topbar">
-        <div>
-          <p class="eyebrow">案件助手</p>
-          <h2>{{ app.currentTitle }}</h2>
-          <p class="muted">输入事实后，系统会整理风险、证据缺口、重庆本地参考和可复核的文书草稿。</p>
-        </div>
-        <div class="topbar-actions">
-          <span class="status-pill soft">{{ app.readinessLabel }}</span>
-          <button class="button secondary" :disabled="app.loading" @click="router.push({ name: 'home' })">
-            官网
-          </button>
-          <button class="button secondary" :disabled="app.loading" @click="startNewCase">重置</button>
-          <button class="button primary" :disabled="app.loading || !app.canSave" @click="app.saveCurrentCase">
+    <main class="farui-workspace">
+      <div class="workspace-topline">
+        <button class="workspace-history-button" type="button" @click="scrollToSidebar">
+          <span aria-hidden="true">◷</span>
+          历史记录
+        </button>
+        <div class="workspace-quick-actions">
+          <button class="ghost-link" type="button" @click="router.push({ name: 'home' })">官网首页</button>
+          <button class="ghost-link" type="button" @click="startNewCase">新建会话</button>
+          <button class="primary-mini" :disabled="app.loading || !app.canSave" type="button" @click="app.saveCurrentCase">
             {{ app.activeCaseId ? "更新案件" : "保存案件" }}
           </button>
         </div>
-      </header>
-
-      <nav class="assistant-progress" aria-label="案件办理步骤">
-        <div
-          v-for="step in assistantSteps"
-          :key="step.label"
-          class="assistant-progress-step"
-          :class="{ active: step.active, done: step.done }"
-        >
-          <span>{{ step.index }}</span>
-          <strong>{{ step.label }}</strong>
-        </div>
-      </nav>
-
-      <div class="content-grid">
-        <CaseFormPanel
-          :loading="app.loading"
-          :user="app.user"
-          :workup-result="app.workupResult"
-          :error-message="app.errorMessage"
-          :success-message="app.successMessage"
-          :case-form="app.caseForm"
-          :evidence-text="app.evidenceText"
-          :document-type="app.documentType"
-          :case-type="app.inferCaseType()"
-          @update:evidence-text="app.setEvidenceText"
-          @update:document-type="app.setDocumentType"
-          @analyze="app.analyzeCase"
-          @generate-document="app.generateDocument"
-        />
-
-        <AnalysisPanel
-          :workup-result="app.workupResult"
-          :primary-finding="app.primaryFinding"
-          :next-best-action="app.nextBestAction"
-          :missing-questions="app.missingQuestions"
-        />
-
-        <DocumentPanel
-          :document-type="app.documentType"
-          :document-result="app.documentResult"
-          :document-validation="app.documentValidation"
-          :format-time="app.formatTime"
-          :loading="app.loading"
-          @save="app.saveCurrentCase"
-        />
       </div>
+
+      <section class="workspace-hero" aria-labelledby="assistant-title">
+        <h1 id="assistant-title">L-ERAP PRO</h1>
+        <p>安全可信的重庆劳动法助手</p>
+      </section>
+
+      <section class="workspace-composer" aria-label="中心输入区">
+        <textarea
+          v-model="assistantPrompt"
+          maxlength="5000"
+          placeholder="阅读起诉状、答辩状、代理词，整理一下庭审问答题纲"
+        />
+        <div class="composer-footer">
+          <div class="composer-tools" aria-label="常用输入能力">
+            <button
+              v-for="tool in composerTools"
+              :key="tool.label"
+              type="button"
+              :disabled="app.loading"
+              @click="applyComposerTool(tool)"
+            >
+              <span>{{ tool.icon }}</span>
+              {{ tool.label }}
+            </button>
+          </div>
+          <div class="composer-send">
+            <span>{{ promptLength }} / 5000</span>
+            <button
+              class="send-button"
+              :disabled="app.loading || !assistantPrompt.trim()"
+              type="button"
+              aria-label="发送并分析"
+              @click="submitPrompt"
+            >
+              {{ app.loading ? "…" : "↗" }}
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <p class="workspace-disclaimer">
+        服务生成的所有内容均由人工智能模型生成，其生成内容的准确性和完整性无法保证，不能代表律师意见和观点。
+      </p>
+
+      <section id="case-workbench" class="workspace-dock">
+        <header class="dock-head">
+          <div>
+            <p class="eyebrow">案件办理进度</p>
+            <h2>{{ app.currentTitle }}</h2>
+            <p class="muted">输入事实后，系统会整理风险、证据缺口、重庆本地参考和可复核的文书草稿。</p>
+          </div>
+          <span class="status-pill soft">{{ app.readinessLabel }}</span>
+        </header>
+
+        <nav class="assistant-progress" aria-label="案件办理步骤">
+          <div
+            v-for="step in assistantSteps"
+            :key="step.label"
+            class="assistant-progress-step"
+            :class="{ active: step.active, done: step.done }"
+          >
+            <span>{{ step.index }}</span>
+            <strong>{{ step.label }}</strong>
+          </div>
+        </nav>
+
+        <div class="content-grid">
+          <CaseFormPanel
+            :loading="app.loading"
+            :user="app.user"
+            :workup-result="app.workupResult"
+            :error-message="app.errorMessage"
+            :success-message="app.successMessage"
+            :case-form="app.caseForm"
+            :evidence-text="app.evidenceText"
+            :document-type="app.documentType"
+            :case-type="app.inferCaseType()"
+            @update:evidence-text="app.setEvidenceText"
+            @update:document-type="app.setDocumentType"
+            @analyze="app.analyzeCase"
+            @generate-document="app.generateDocument"
+          />
+
+          <AnalysisPanel
+            :workup-result="app.workupResult"
+            :primary-finding="app.primaryFinding"
+            :next-best-action="app.nextBestAction"
+            :missing-questions="app.missingQuestions"
+          />
+
+          <DocumentPanel
+            :document-type="app.documentType"
+            :document-result="app.documentResult"
+            :document-validation="app.documentValidation"
+            :format-time="app.formatTime"
+            :loading="app.loading"
+            @save="app.saveCurrentCase"
+          />
+        </div>
+      </section>
     </main>
 
     <AuthDialog
@@ -115,7 +165,7 @@
 </template>
 
 <script setup>
-import { computed, proxyRefs, watch } from "vue";
+import { computed, nextTick, proxyRefs, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import AnalysisPanel from "../components/AnalysisPanel.vue";
@@ -133,6 +183,40 @@ const route = useRoute();
 const router = useRouter();
 const app = proxyRefs(useWorkspaceApp());
 let bootstrapped = false;
+
+const composerTools = [
+  {
+    icon: "⌕",
+    label: "文件",
+    prompt: "请根据我提供的劳动合同、工资流水、考勤记录和聊天记录，整理证据目录与证明目的。",
+  },
+  {
+    icon: "⌾",
+    label: "知识",
+    prompt: "请结合重庆劳动仲裁常见规则，说明本案可能涉及的法律依据和举证重点。",
+  },
+  {
+    icon: "⚡",
+    label: "技能",
+    prompt: "请把本案拆成案件分析、赔偿计算、文书生成三个办理步骤。",
+  },
+  {
+    icon: "¥",
+    label: "赔偿",
+    prompt: "请估算拖欠工资、经济补偿或违法解除赔偿，并说明计算公式。",
+  },
+];
+
+const assistantPrompt = computed({
+  get() {
+    return app.caseForm.facts || "";
+  },
+  set(value) {
+    app.caseForm.facts = value;
+  },
+});
+
+const promptLength = computed(() => assistantPrompt.value.length);
 
 const assistantSteps = computed(() => [
   {
@@ -175,6 +259,28 @@ function applyPendingHomePrompt() {
   }
   app.caseForm.facts = prompt;
   window.sessionStorage.removeItem(PENDING_HOME_PROMPT_KEY);
+}
+
+function applyComposerTool(tool) {
+  const current = assistantPrompt.value.trim();
+  assistantPrompt.value = current ? `${current}\n\n${tool.prompt}` : tool.prompt;
+}
+
+async function submitPrompt() {
+  if (!assistantPrompt.value.trim()) {
+    return;
+  }
+  await app.analyzeCase();
+  await nextTick();
+  scrollToWorkbench();
+}
+
+function scrollToWorkbench() {
+  document.getElementById("case-workbench")?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function scrollToSidebar() {
+  document.getElementById("workspace-history")?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 async function hydrateFromRoute() {
