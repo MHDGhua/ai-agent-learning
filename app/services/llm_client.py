@@ -1,3 +1,4 @@
+import asyncio
 import json
 import os
 import re
@@ -21,6 +22,8 @@ Intent = Literal["draft", "audit", "query"]
 
 # 支持的模型提供商
 LLM_PROVIDER = os.getenv("LLM_PROVIDER", "local")  # local, openai, magic_tower, deepseek
+LLM_TIMEOUT_SECONDS = float(os.getenv("LLM_TIMEOUT_SECONDS", "30"))
+LLM_MAX_RETRIES = max(1, int(os.getenv("LLM_MAX_RETRIES", "3")))
 
 
 def _is_configured_key(value: str) -> bool:
@@ -121,6 +124,23 @@ class LLMClient:
             intent = "query"
         return {"intent": intent}
 
+    async def _invoke_with_retry(self, messages: List[Any]) -> Any:
+        last_error: Exception | None = None
+        for attempt in range(1, LLM_MAX_RETRIES + 1):
+            try:
+                llm = self._get_llm()
+                return await asyncio.wait_for(llm.ainvoke(messages), timeout=LLM_TIMEOUT_SECONDS)
+            except Exception as exc:
+                last_error = exc
+                if attempt >= LLM_MAX_RETRIES:
+                    break
+                delay_seconds = min(2 ** (attempt - 1), 4)
+                logger.warning(
+                    f"LLM 调用失败，准备重试 {attempt}/{LLM_MAX_RETRIES}: {type(exc).__name__}"
+                )
+                await asyncio.sleep(delay_seconds)
+        raise RuntimeError(f"LLM 调用失败，已重试 {LLM_MAX_RETRIES} 次") from last_error
+
     async def classify_intent(self, user_input: str) -> Intent:
         """
         仅输出意图字符串（draft/audit/query）以便状态机可确定性推进。
@@ -134,7 +154,6 @@ class LLMClient:
                 return "audit"
             return "query"
 
-        llm = self._get_llm()
         allowed = ["draft", "audit", "query"]
         prompt = (
             "你是 L-ERAP PRO 的意图路由器。\n"
@@ -147,7 +166,7 @@ class LLMClient:
         )
 
         # LangChain 支持异步 invoke
-        resp = await llm.ainvoke([HumanMessage(content=prompt)])
+        resp = await self._invoke_with_retry([HumanMessage(content=prompt)])
         text = (resp.content or "").strip().lower()
         if text not in allowed:
             # 不可解析时降级到 query
@@ -168,7 +187,6 @@ class LLMClient:
                 "请补充时间、单位名称、工资标准、证据清单和诉求金额后再提交。"
             )
 
-        llm = self._get_llm()
         context_block = "\n\n".join([f"[{i+1}] {c}" for i, c in enumerate(context_data)]) if context_data else "（无召回上下文）"
 
         prompt = (
@@ -182,7 +200,7 @@ class LLMClient:
             f"上下文(context_data)：\n{context_block}\n"
         )
 
-        resp = await llm.ainvoke([HumanMessage(content=prompt)])
+        resp = await self._invoke_with_retry([HumanMessage(content=prompt)])
         content = resp.content or ""
         return content.strip() or "（草稿为空，可能是上游 LLM 生成失败）"
 
@@ -198,7 +216,6 @@ class LLMClient:
             final_output = draft_content if not errors else "请先补齐案件事实后再提交。"
             return (len(errors) == 0, errors, final_output)
 
-        llm = self._get_llm()
         context_block = "\n\n".join([f"[{i+1}] {c}" for i, c in enumerate(context_data)]) if context_data else "（无召回上下文）"
 
         prompt = (
@@ -216,7 +233,7 @@ class LLMClient:
             f"上下文(context_data)：\n{context_block}\n"
         )
 
-        resp = await llm.ainvoke([HumanMessage(content=prompt)])
+        resp = await self._invoke_with_retry([HumanMessage(content=prompt)])
         raw = (resp.content or "").strip()
 
         # 容错：尝试提取 JSON 对象
@@ -242,8 +259,7 @@ class LLMClient:
         """兼容旧 Agent 接口。"""
         if self._use_local_logic():
             return "本地模式下已生成基础分析结果。"
-        llm = self._get_llm()
-        resp = await llm.ainvoke([HumanMessage(content=prompt)])
+        resp = await self._invoke_with_retry([HumanMessage(content=prompt)])
         return str(resp.content or "").strip()
 
 

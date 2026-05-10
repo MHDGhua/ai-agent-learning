@@ -21,6 +21,7 @@ CHONGQING_LOCAL_COLLECTION = os.getenv("CHONGQING_LOCAL_COLLECTION", "chongqing_
 LABORLAW_NAVIGATOR_COLLECTION = os.getenv("LABORLAW_NAVIGATOR_COLLECTION", "laborlaw_navigator_curated")
 EXTERNAL_DATA_DIR = os.getenv("EXTERNAL_DATA_DIR", os.path.join("data", "external_datasets"))
 _fallback_docs: List[str] | None = None
+RAG_DEGRADED_CONTEXT = "知识库检索暂不可用：请先基于用户事实、证据清单和通用劳动争议规则进行保守分析，并提示用户人工复核。"
 
 
 def _get_collection():
@@ -48,31 +49,33 @@ def retrieve_context(query: str, top_k: int = 3) -> List[str]:
     使用 Chroma 向量库召回与 query 最相关的文档片段。
     返回 List[str]，由上层节点写入 state.context_data。
     """
-
     if not query.strip():
         return []
 
-    local_docs = _retrieve_chongqing_local_sources(query, min(top_k, 3))
-    if local_docs:
-        navigator_docs = _retrieve_laborlaw_navigator_curated(query, max(0, top_k - len(local_docs)))
-        return (local_docs + navigator_docs)[:top_k]
-
     try:
-        collection = _get_collection()
-        results = collection.query(query_texts=[query], n_results=top_k)
-        docs = results.get("documents", [[]])[0] or []
-    except Exception:
-        docs = _retrieve_from_processed_files(query, top_k)
+        local_docs = _retrieve_chongqing_local_sources(query, min(top_k, 3))
+        if local_docs:
+            navigator_docs = _retrieve_laborlaw_navigator_curated(query, max(0, top_k - len(local_docs)))
+            return (local_docs + navigator_docs)[:top_k]
 
-    # chromadb 返回可能包含非字符串时，做防御性转换
-    out: List[str] = []
-    for d in docs:
-        if d is None:
-            continue
-        out.append(str(d))
-    if len(out) < top_k:
-        out.extend(_retrieve_laborlaw_navigator_curated(query, top_k - len(out)))
-    return out
+        try:
+            collection = _get_collection()
+            results = collection.query(query_texts=[query], n_results=top_k)
+            docs = results.get("documents", [[]])[0] or []
+        except Exception:
+            docs = _retrieve_from_processed_files(query, top_k)
+
+        # chromadb 返回可能包含非字符串时，做防御性转换
+        out: List[str] = []
+        for d in docs:
+            if d is None:
+                continue
+            out.append(str(d))
+        if len(out) < top_k:
+            out.extend(_retrieve_laborlaw_navigator_curated(query, top_k - len(out)))
+        return out or [RAG_DEGRADED_CONTEXT]
+    except Exception:
+        return [RAG_DEGRADED_CONTEXT]
 
 
 def _retrieve_laborlaw_navigator_curated(query: str, top_k: int) -> List[str]:
