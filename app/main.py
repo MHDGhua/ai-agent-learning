@@ -17,6 +17,7 @@ from app.api.workspace import router as workspace_router
 from app.api.webhooks import register_routes
 from app.core.error_handlers import register_exception_handlers
 from app.core.persistence import ensure_database
+from app.core.request_logging import register_request_logging
 from app.config.settings import VERSION
 from app.utils.logger import setup_logger
 
@@ -87,6 +88,7 @@ def create_app() -> FastAPI:
     )
     
     _configure_security_middleware(app)
+    register_request_logging(app, PROJECT_ROOT / "data" / "runtime" / "api.log")
     register_exception_handlers(app)
 
     # 注册API路由
