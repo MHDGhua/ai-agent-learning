@@ -53,6 +53,18 @@ class LocalArbitrationTests(unittest.TestCase):
             asset_response = client.get(asset_path)
             self.assertEqual(asset_response.status_code, 200)
 
+    def test_spa_routes_refresh_to_frontend_index(self):
+        client = TestClient(create_app())
+        for path in ["/login", "/register", "/settings", "/cases", "/admin/settings", "/missing-route"]:
+            response = client.get(path)
+            self.assertEqual(response.status_code, 200)
+            self.assertIn("L-ERAP PRO", response.text)
+
+        api_response = client.get("/api/unknown")
+        self.assertEqual(api_response.status_code, 404)
+        missing_asset = client.get("/missing.js")
+        self.assertEqual(missing_asset.status_code, 404)
+
     def test_frontend_hides_internal_runtime_details(self):
         frontend_root = Path(__file__).resolve().parents[1] / "frontend" / "src"
         visible_files = [
@@ -217,6 +229,9 @@ class LocalArbitrationTests(unittest.TestCase):
         activities_res = client.get("/workspace/activities")
         self.assertEqual(activities_res.status_code, 200)
         self.assertTrue(activities_res.json()["items"])
+        auth_activity_res = client.get("/auth/activity")
+        self.assertEqual(auth_activity_res.status_code, 200)
+        self.assertTrue(auth_activity_res.json()["items"])
 
         delete_res = client.delete(f"/workspace/cases/{case_id}")
         self.assertEqual(delete_res.status_code, 204)
