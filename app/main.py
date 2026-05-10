@@ -25,7 +25,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 FRONTEND_DIR = PROJECT_ROOT / "frontend"
 FRONTEND_DIST_DIR = FRONTEND_DIR / "dist"
 FRONTEND_INDEX = FRONTEND_DIST_DIR / "index.html" if (FRONTEND_DIST_DIR / "index.html").exists() else FRONTEND_DIR / "index.html"
-API_PREFIXES = {"auth", "arbitration", "workspace", "webhooks", "healthz", "assets", "frontend", "src"}
+API_PREFIXES = {"api", "auth", "arbitration", "workspace", "webhooks", "healthz", "assets", "frontend", "src"}
 
 
 def _parse_csv_env(name: str, default: str = "") -> List[str]:
@@ -80,7 +80,7 @@ def register_frontend(app: FastAPI) -> None:
     @app.get("/{full_path:path}", include_in_schema=False)
     async def frontend_spa_fallback(full_path: str):
         first_segment = full_path.split("/", 1)[0]
-        if first_segment in API_PREFIXES:
+        if first_segment in API_PREFIXES or "." in Path(full_path).name:
             raise HTTPException(status_code=404, detail="Not Found")
         return FileResponse(FRONTEND_INDEX)
 

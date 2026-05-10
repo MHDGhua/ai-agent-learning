@@ -1,6 +1,7 @@
-import { computed, onMounted, reactive, ref } from "vue";
+import { computed, inject, onMounted, reactive, ref } from "vue";
 
 import { ApiError, arbitrationApi, authApi, workspaceApi } from "../api";
+import { sessionKey } from "../session";
 
 const LEGACY_KEYS = {
   history: "lerap_ui_history",
@@ -61,10 +62,11 @@ function formatReadinessLabel(value) {
 }
 
 export function useWorkspaceApp() {
+  const sharedSession = inject(sessionKey, null);
   const loading = ref(false);
   const errorMessage = ref("");
   const successMessage = ref("");
-  const user = ref(null);
+  const user = sharedSession?.user ?? ref(null);
   const authMode = ref("login");
   const showAuthDialog = ref(false);
   const showPasswordDialog = ref(false);
@@ -220,6 +222,22 @@ export function useWorkspaceApp() {
     successMessage.value = "";
   }
 
+  function setCurrentUser(nextUser) {
+    if (sharedSession) {
+      sharedSession.setUser(nextUser);
+      return;
+    }
+    user.value = nextUser || null;
+  }
+
+  function clearCurrentUser() {
+    if (sharedSession) {
+      sharedSession.clearUser();
+      return;
+    }
+    user.value = null;
+  }
+
   async function withLoading(task) {
     loading.value = true;
     resetMessages();
@@ -301,22 +319,22 @@ export function useWorkspaceApp() {
 
   async function loadSession() {
     try {
-      const response = await authApi.session();
-      if (!response.user) {
-        user.value = null;
+      const currentUser = sharedSession ? await sharedSession.refreshSession() : (await authApi.session()).user;
+      if (!currentUser) {
         profileForm.full_name = "";
         profileForm.role = "案件申请人";
+        await refreshWorkspaceData();
         return;
       }
-      user.value = response.user;
-      profileForm.full_name = response.user.full_name;
-      profileForm.role = response.user.role;
+      setCurrentUser(currentUser);
+      profileForm.full_name = currentUser.full_name;
+      profileForm.role = currentUser.role;
       if (!caseForm.applicant_info.name) {
-        caseForm.applicant_info.name = response.user.full_name;
+        caseForm.applicant_info.name = currentUser.full_name;
       }
       await refreshWorkspaceData();
     } catch {
-      user.value = null;
+      clearCurrentUser();
       profileForm.full_name = "";
       profileForm.role = "案件申请人";
     }
@@ -356,7 +374,7 @@ export function useWorkspaceApp() {
               email: authForm.email,
               password: authForm.password,
             });
-      user.value = response.user;
+      setCurrentUser(response.user);
       profileForm.full_name = response.user.full_name;
       profileForm.role = response.user.role;
       if (!caseForm.applicant_info.name) {
@@ -375,7 +393,7 @@ export function useWorkspaceApp() {
   async function logout() {
     await withLoading(async () => {
       await authApi.logout();
-      user.value = null;
+      clearCurrentUser();
       savedCases.value = [];
       activities.value = [];
       activeCaseId.value = null;
@@ -456,7 +474,7 @@ export function useWorkspaceApp() {
         current_password: passwordForm.current_password,
         new_password: passwordForm.new_password,
       });
-      user.value = response.user;
+      setCurrentUser(response.user);
       passwordForm.current_password = "";
       passwordForm.new_password = "";
       closePasswordDialog();
@@ -472,7 +490,7 @@ export function useWorkspaceApp() {
         full_name: profileForm.full_name,
         role: profileForm.role,
       });
-      user.value = response.user;
+      setCurrentUser(response.user);
       if (!caseForm.applicant_info.name || caseForm.applicant_info.name === previousName) {
         caseForm.applicant_info.name = response.user.full_name;
       }
