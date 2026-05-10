@@ -9,9 +9,25 @@ from dataclasses import asdict, is_dataclass
 from datetime import datetime
 import time
 from fastapi import APIRouter, HTTPException, Query
-from pydantic import BaseModel, Field
+from pydantic import Field
 from loguru import logger
 
+from app.schemas.arbitration import (
+    ArbitrationCostEstimate,
+    CaseAnalysisRequest,
+    CaseAnalysisResponse,
+    CaseWorkupResponse,
+    ClaimCalculationRequest,
+    ClaimCalculationResponse,
+    DocumentGenerationRequest,
+    DocumentGenerationResponse,
+    DocumentValidationRequest,
+    DocumentValidationResponse,
+    IntakeChecklistRequest,
+    IntakeChecklistResponse,
+    LocalReferenceResponse,
+    SuccessRatePrediction,
+)
 from app.services.arbitration_document_generator import ArbitrationDocumentGenerator, DocumentType
 from app.services.arbitration_analyzer import ArbitrationAnalyzer, ArbitrationAnalysis
 from app.services.chongqing_calculator import ChongqingLaborCalculator
@@ -26,147 +42,6 @@ from app.config.combined_config import API_CLIENT_CONFIG
 
 # 创建API路由器
 router = APIRouter(prefix="/arbitration", tags=["arbitration"])
-
-
-class CaseAnalysisRequest(BaseModel):
-    """案件分析请求数据模型"""
-    case_type: str
-    facts: str
-    evidence: List[str] = Field(default_factory=list)
-    applicant_info: Dict[str, Any] = Field(default_factory=dict)
-    salary: Optional[float] = None
-    years: Optional[float] = None
-    amount: Optional[float] = None
-    district: Optional[str] = None
-    contact_name: Optional[str] = None
-    contact_phone: Optional[str] = None
-    evidence_quality: str = "一般"
-    applicant_background: str = "普通员工"
-    enable_opposition_review: bool = True  # 是否启用红蓝对抗审查，默认开启
-
-
-class CaseAnalysisResponse(BaseModel):
-    """案件分析响应数据模型"""
-    case_type: str
-    risk_level: str
-    risk_factors: List[str]
-    cost_estimate: Dict[str, float]
-    success_probability: str
-    probability_confidence: float
-    legal_basis: List[str]
-    case_similarity: List[Dict[str, Any]]
-    recommendations: List[str]
-    missing_info: Optional[List[str]] = None  # 缺失信息提示
-    opposition_review: Optional[Dict[str, Any]] = None  # 对抗审查结果
-    jurisdiction: Optional[Dict[str, Any]] = None
-    limitation: Optional[Dict[str, Any]] = None
-    claim_items: Optional[List[Dict[str, Any]]] = None
-    evidence_checklist: Optional[List[Dict[str, Any]]] = None
-    action_plan: Optional[List[str]] = None
-    negotiation_points: Optional[List[str]] = None
-    warnings: Optional[List[str]] = None
-    local_reference: Optional[Dict[str, Any]] = None
-    summary: Optional[str] = None
-    analysis: Optional[Dict[str, Any]] = None
-
-
-class DocumentGenerationRequest(BaseModel):
-    """文书生成请求数据模型"""
-    document_type: str
-    case_data: Dict[str, Any]
-
-
-class DocumentGenerationResponse(BaseModel):
-    """文书生成响应数据模型"""
-    document_type: str
-    content: str
-    generated_at: str
-    advice: Optional[str] = None
-    document: Optional[Dict[str, Any]] = None
-
-
-class DocumentValidationRequest(BaseModel):
-    document_type: str
-    case_data: Dict[str, Any]
-    content: str
-
-
-class DocumentValidationResponse(BaseModel):
-    document_type: str
-    is_valid: bool
-    issues: List[str]
-    warnings: List[str]
-    suggestions: List[str]
-    checked_at: str
-
-
-class ArbitrationCostEstimate(BaseModel):
-    """仲裁成本估算"""
-    arbitration_fee: float
-    lawyer_fee: float
-    other_costs: float
-    total_cost: float
-    cost_estimate: Optional[float] = None
-    explanation: Optional[str] = None
-
-
-class SuccessRatePrediction(BaseModel):
-    """成功率预测"""
-    success_probability: str
-    probability_value: float
-    confidence: float
-    key_factors: List[str]
-    success_rate: Optional[str] = None
-    explanation: Optional[str] = None
-
-
-class ClaimCalculationRequest(BaseModel):
-    """赔偿/费用计算请求"""
-    calculation_type: str
-    salary: float = 0.0
-    years: float = 0.0
-    reason: str = ""
-    hours: float = 0.0
-    day_type: str = "平日"
-    injury_level: Optional[int] = None
-
-
-class ClaimCalculationResponse(BaseModel):
-    calculation_type: str
-    amount: float
-    formula: str
-    notes: List[str]
-
-
-class IntakeChecklistRequest(BaseModel):
-    case_type: str = "劳动纠纷"
-    facts: str = ""
-    evidence: List[str] = Field(default_factory=list)
-    applicant_info: Dict[str, Any] = Field(default_factory=dict)
-
-
-class IntakeChecklistResponse(BaseModel):
-    missing_questions: List[str]
-    evidence_checklist: List[Dict[str, Any]]
-    jurisdiction: Dict[str, Any]
-    limitation: Dict[str, Any]
-
-
-class LocalReferenceResponse(BaseModel):
-    query: str
-    references: List[Dict[str, Any]]
-
-
-class CaseWorkupResponse(BaseModel):
-    analysis: CaseAnalysisResponse
-    intake: IntakeChecklistResponse
-    cost: ArbitrationCostEstimate
-    success_prediction: SuccessRatePrediction
-    local_references: List[Dict[str, Any]]
-    suggested_documents: List[str]
-    workflow_stage: str
-    service_recommendation: Dict[str, Any]
-    pipeline_status: List[Dict[str, Any]] = Field(default_factory=list)
 
 
 def _validate_document_content(document_type: str, case_data: Dict[str, Any], content: str) -> DocumentValidationResponse:

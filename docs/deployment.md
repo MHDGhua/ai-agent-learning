@@ -3,7 +3,7 @@
 本项目已补齐适合小型 VPS 的多容器部署文件，默认使用：
 
 - `app`：FastAPI 后端容器
-- `caddy`：静态前端 + 反向代理 + 自动 HTTPS
+- `caddy`：同域 HTTPS 入口 + 反向代理
 
 ## 适用场景
 
@@ -32,6 +32,7 @@ cp .env.production.example .env.production
 - `DEEPSEEK_API_KEY` 或你实际使用的其他模型密钥
 - `CORS_ALLOWED_ORIGINS`
 - `ALLOWED_HOSTS`
+- `SESSION_COOKIE_SECURE`
 
 3. 确认域名 `A` 记录指向你的服务器公网 IP。
 4. 确认服务器防火墙已放行 `80` 和 `443` 端口。
@@ -41,6 +42,8 @@ cp .env.production.example .env.production
 ```bash
 docker compose up -d --build
 ```
+
+说明：`Dockerfile` 已内置前端 Vite 构建阶段，生产部署不需要手动执行 `npm run build`。
 
 ## 推荐的版本管理与更新方式
 
@@ -115,6 +118,7 @@ docker compose logs -f caddy
 - CORS 改为环境变量控制
 - Host 头白名单改为环境变量控制
 - Chroma、运行态 SQLite、日志、输出目录使用 Docker volume 持久化
+- 登录会话使用 HttpOnly Cookie，`SESSION_COOKIE_SECURE=true` 时只允许 HTTPS 传输
 - Caddy 自动申请和续期 HTTPS 证书
 
 ## 重要提醒

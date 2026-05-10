@@ -41,6 +41,14 @@ L-ERAP-PRO 是面向普通劳动者的重庆劳动仲裁助手，不是专业律
 
 ## 已完成的重要改动
 
+- 仲裁接口请求/响应模型已从 `app/api/arbitration.py` 拆分到 `app/schemas/arbitration.py`，开始收敛 API 层与 Schema 层职责。
+- 真实账户已补充修改密码接口 `/auth/change-password`，新密码要求至少 8 位且同时包含字母和数字，修改后旧会话全部失效并重新签发当前会话。
+- 前端已接入文书校验结果展示，生成文书后会自动调用 `/arbitration/validate-document`，展示问题、警告和建议。
+- 登录用户在案情分析和文书生成后会自动把当前案件快照保存到服务端，减少手动保存遗漏。
+- 新增真实账户与服务端持久化基础能力：`/auth/register`、`/auth/login`、`/auth/logout`、`/auth/me`、`/workspace/cases`、`/workspace/activities` 已可用，使用 SQLite 保存用户、会话、案件快照和活动记录。
+- 新增 `app/core/persistence.py` 轻量持久化层，默认数据库切到 `data/runtime/lerap_app.db`，密码采用 PBKDF2 哈希，登录会话采用 HttpOnly Cookie。
+- 前端已从单文件静态页切换到 Vue 3 + Vite 工程结构，入口改为 `frontend/src/App.vue`，支持登录、案情分析、文书生成和服务端保存案件。
+- 生产部署已改为 Docker 多阶段构建前端产物，由 FastAPI 统一提供前端静态资源，Caddy 只保留同域 HTTPS 反向代理职责。
 - 新增协作者状态文件夹：`docs/status/PROJECT_BRIEF.md`，集中说明项目定位、进度、接口、技术要求、分工和协作规则。
 - 前端已重做为“接待式单案件界面”，不再沿袭旧的工作台 / SaaS 导航结构。
 - 主界面改为“说案情 -> 看结论 -> 整理材料 -> 推进进度”的单案流程，文书、重庆参考、历史记录和本地身份都改为次级能力。
@@ -61,6 +69,12 @@ L-ERAP-PRO 是面向普通劳动者的重庆劳动仲裁助手，不是专业律
 
 ## 最近验证
 
+- 2026-05-10：`.\.venv\Scripts\python.exe -m unittest discover -s tests -v` 通过，11 个测试 OK，新增修改密码链路回归。
+- 2026-05-10：`cd frontend && npm run build` 通过，前端已包含自动保存与文书校验展示改动。
+- 2026-05-10：`.\.venv\Scripts\python.exe -m compileall app tests` 通过，新增 `app/schemas/arbitration.py` 与认证安全改动未破坏编译。
+- 2026-05-10：`cd frontend && npm install && npm run build` 通过，Vite 前端成功产出 `frontend/dist/`。
+- 2026-05-10：`.\.venv\Scripts\python.exe -m unittest discover -s tests -v` 通过，11 个测试 OK，新增真实账户与服务端保存链路测试。
+- 2026-05-10：`.\.venv\Scripts\python.exe -m compileall app tests` 通过。
 - 2026-05-10：新版前端桌面与移动端联调通过，产出截图 `output/playwright/redesign-desktop.png`、`output/playwright/redesign-mobile.png`。
 - 2026-05-10：Playwright 实测 `说案情 -> /arbitration/workup -> 看结论` 主流程通过，本地资料和历史快照正常出现。
 - 2026-05-10：`.\.venv\Scripts\python.exe -m unittest discover -s tests -v` 通过，10 个测试 OK，新增首页重设计断言。

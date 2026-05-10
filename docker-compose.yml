@@ -43,7 +43,6 @@ services:
     env_file:
       - .env.production
     volumes:
-      - ./frontend:/srv/frontend:ro
       - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config

@@ -1,52 +1,20 @@
-# 重庆劳动法专家系统 (解耦版本)
+# 重庆劳动法专家系统
 
 ## 项目概述
 
-这是一个基于多Agent架构的重庆劳动法智能咨询系统，提供劳动仲裁辅助、文书生成、案件分析等功能。本项目已进行解耦重构，将数据处理、文档处理和数据导入功能分离到独立模块中，提高了系统的可维护性和可扩展性。
+这是一个面向普通劳动者的重庆劳动仲裁助手，后端基于 FastAPI 与多 Agent 规则/检索能力，前端采用 Vue 3 + Vite 工作台，支持真实账户、服务端案件保存、案情分析、文书生成和重庆本地参考。
 
 ## 项目结构
 
 ```
 L-ERAP-PRO/
-├── app/
-│   ├── api/                    # API接口模块
-│   ├── agents/                 # Agent智能体模块
-│   ├── config/                 # 配置文件模块
-│   ├── services/               # 服务模块
-│   │   ├── data_processing/    # 数据处理模块（已解耦）
-│   │   │   ├── __init__.py
-│   │   │   ├── data_cleaner.py # 数据清洗功能
-│   │   │   └── document_processor.py # 文档处理功能
-│   │   ├── data_import/        # 数据导入模块（已解耦）
-│   │   │   ├── __init__.py
-│   │   │   └── data_importer.py # 数据导入和存储功能
-│   │   ├── __init__.py
-│   │   └── ...                 # 其他服务模块
-│   ├── utils/                  # 工具模块
-│   └── ...                     # 其他模块
-├── scripts/                    # 脚本文件
-│   ├── process_laborlaw_dataset.py # 数据处理脚本
-│   └── import_external_data.py   # 数据导入脚本
-├── data/                       # 数据目录
-│   ├── processed_laborlaw/     # 处理后的劳动法数据
-│   └── chroma_db/              # Chroma知识库数据
-└── requirements.txt            # 依赖包列表
+├── app/                        # FastAPI 后端、Agent、规则与持久化
+├── frontend/                   # Vue 3 + Vite 前端
+├── docs/                       # 项目与部署文档
+├── scripts/                    # 数据处理与验证脚本
+├── tests/                      # 后端合同与场景测试
+└── data/                       # 知识库、运行态与输出数据
 ```
-
-## 解耦模块说明
-
-### 1. 数据处理模块 (`app/services/data_processing/`)
-
-此模块包含所有数据处理相关的功能，包括：
-- **DataCleaner**: 数据清洗功能，用于清理和标准化文本数据
-- **DocumentProcessor**: 文档处理功能，支持多种文档格式的处理
-
-### 2. 数据导入模块 (`app/services/data_import/`)
-
-此模块负责数据的导入、存储和检索功能：
-- **DataImporter**: 数据导入器，支持JSON、CSV等多种格式的数据导入
-- 使用ChromaDB作为知识库存储后端
-- 支持TF-IDF嵌入向量生成
 
 ## 核心功能
 
@@ -79,23 +47,37 @@ L-ERAP-PRO/
 
 ## 快速开始
 
-### 安装依赖
+### 安装后端依赖
 ```bash
 pip install -r requirements.txt
 ```
 
-### 启动服务
+### 安装前端依赖
+```bash
+cd frontend
+npm install
+cd ..
+```
+
+### 启动后端
 ```bash
 uvicorn app.main:create_app --factory --host 0.0.0.0 --port 8000 --reload
 ```
 
-### 打开前端界面
-启动服务后，直接访问根路径即可打开新版前端：
+### 启动前端开发服务器
+```bash
+cd frontend
+npm run dev
+```
 
-- `http://127.0.0.1:8000/`
-- 前端入口文件位于 `frontend/index.html`
-- 当前界面已改为面向普通劳动者的接待式单案件布局，以自然语言录入为核心
-- 二级能力包括：文书中心、重庆参考、历史记录和本地身份信息
+### 打开前端界面
+
+- 开发模式：`http://127.0.0.1:5173/`
+- 构建后或容器模式：`http://127.0.0.1:8000/`
+
+- 前端源码入口位于 `frontend/src/App.vue`
+- API 默认走同源，也可通过 `VITE_API_BASE_URL` 指向独立后端地址
+- 登录成功后，案件快照、文书草稿和活动记录会保存到服务端 SQLite
 
 ### 本地模式说明
 默认使用本地兜底模式，不依赖外部大模型即可完成案件分析、文书生成和基础测试。
@@ -120,11 +102,13 @@ python scripts/import_external_data.py
 ## 技术栈
 
 - **后端框架**: FastAPI
+- **前端框架**: Vue 3 + Vite
 - **AI模型**: OpenAI API
 - **知识库**: ChromaDB
 - **文档处理**: python-docx, PyPDF2, pandas
 - **嵌入模型**: TF-IDF (本地实现)
-- **部署**: Docker
+- **持久化**: SQLite（默认）
+- **部署**: Docker + Caddy
 
 ## 项目特点
 
@@ -138,9 +122,10 @@ python scripts/import_external_data.py
 ## 开发说明
 
 ### 目录结构说明
-- `app/`: 主应用代码
+- `app/`: 主应用代码与 API
+- `frontend/`: Vite 前端源码与构建配置
 - `scripts/`: 数据处理和导入脚本
-- `data/`: 数据存储目录
+- `data/`: 数据和运行态目录
 - `docs/`: 项目文档
 - `tests/`: 测试代码
 
@@ -148,6 +133,8 @@ python scripts/import_external_data.py
 配置文件位于 `app/config/` 目录下，包括：
 - `settings.py`: 系统基础配置
 - `combined_config.py`: 合并的LLM和API配置
+- `DATABASE_URL`: 默认 `sqlite:///./data/runtime/lerap_app.db`
+- `SESSION_COOKIE_SECURE`: 生产环境建议设为 `true`
 
 ## 贡献
 

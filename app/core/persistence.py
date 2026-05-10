@@ -144,12 +144,17 @@ def _hash_session_token(token: str) -> str:
     return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
 
+def _normalize_email(email: str) -> str:
+    return (email or "").strip().lower()
+
+
 def create_user(*, email: str, password: str, full_name: str, role: str) -> Dict[str, Any]:
     now = _utc_now()
+    normalized_email = _normalize_email(email)
     with _get_connection() as connection:
         existing = connection.execute(
             "SELECT id FROM users WHERE lower(email) = lower(?)",
-            (email.strip(),),
+            (normalized_email,),
         ).fetchone()
         if existing is not None:
             raise ValueError("该邮箱已注册。")
@@ -159,7 +164,7 @@ def create_user(*, email: str, password: str, full_name: str, role: str) -> Dict
             VALUES (?, ?, ?, ?, ?, ?)
             """,
             (
-                email.strip(),
+                normalized_email,
                 _hash_password(password),
                 full_name.strip(),
                 role.strip() or "案件申请人",
@@ -175,10 +180,11 @@ def create_user(*, email: str, password: str, full_name: str, role: str) -> Dict
 
 
 def authenticate_user(*, email: str, password: str) -> Optional[Dict[str, Any]]:
+    normalized_email = _normalize_email(email)
     with _get_connection() as connection:
         row = connection.execute(
             "SELECT * FROM users WHERE lower(email) = lower(?)",
-            (email.strip(),),
+            (normalized_email,),
         ).fetchone()
     if row is None or not _verify_password(password, row["password_hash"]):
         return None
@@ -218,10 +224,19 @@ def create_session(user_id: int) -> str:
 def delete_session(token: str) -> None:
     if not token:
         return
+    token_hash = _hash_session_token(token)
     with _get_connection() as connection:
         connection.execute(
             "DELETE FROM sessions WHERE session_token_hash = ?",
-            (_hash_session_token(token),),
+            (token_hash,),
+        )
+
+
+def delete_user_sessions(user_id: int) -> None:
+    with _get_connection() as connection:
+        connection.execute(
+            "DELETE FROM sessions WHERE user_id = ?",
+            (user_id,),
         )
 
 
@@ -238,6 +253,7 @@ def get_user_by_session_token(token: str) -> Optional[Dict[str, Any]]:
         return None
     cleanup_expired_sessions()
     now = _utc_now()
+    token_hash = _hash_session_token(token)
     with _get_connection() as connection:
         row = connection.execute(
             """
@@ -246,14 +262,42 @@ def get_user_by_session_token(token: str) -> Optional[Dict[str, Any]]:
             JOIN users ON users.id = sessions.user_id
             WHERE sessions.session_token_hash = ? AND sessions.expires_at >= ?
             """,
-            (_hash_session_token(token), now),
+            (token_hash, now),
         ).fetchone()
         if row is not None:
             connection.execute(
                 "UPDATE sessions SET last_seen_at = ? WHERE session_token_hash = ?",
-                (now, _hash_session_token(token)),
+                (now, token_hash),
             )
     return _row_to_user(row)
+
+
+def change_user_password(*, user_id: int, current_password: str, new_password: str) -> Dict[str, Any]:
+    now = _utc_now()
+    with _get_connection() as connection:
+        row = connection.execute(
+            "SELECT * FROM users WHERE id = ?",
+            (user_id,),
+        ).fetchone()
+        if row is None:
+            raise ValueError("用户不存在。")
+        if not _verify_password(current_password, row["password_hash"]):
+            raise ValueError("当前密码错误。")
+        if _verify_password(new_password, row["password_hash"]):
+            raise ValueError("新密码不能与当前密码相同。")
+        connection.execute(
+            "UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?",
+            (_hash_password(new_password), now, user_id),
+        )
+        connection.execute(
+            "DELETE FROM sessions WHERE user_id = ?",
+            (user_id,),
+        )
+        updated = connection.execute(
+            "SELECT * FROM users WHERE id = ?",
+            (user_id,),
+        ).fetchone()
+    return _row_to_user(updated) or {}
 
 
 def build_case_title(snapshot: Dict[str, Any], case_type: str) -> str:

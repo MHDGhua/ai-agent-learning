@@ -1,8 +1,10 @@
 import asyncio
 import os
 import unittest
+import uuid
 
 os.environ.setdefault("LLM_PROVIDER", "local")
+os.environ.setdefault("DATABASE_URL", "sqlite:///./data/runtime/test_lerap_app.db")
 
 from fastapi.testclient import TestClient
 
@@ -34,17 +36,111 @@ def sample_case():
 
 
 class LocalArbitrationTests(unittest.TestCase):
-    def test_root_serves_frontend_redesign(self):
+    def test_root_serves_frontend_workbench(self):
         client = TestClient(create_app())
         response = client.get("/")
         self.assertEqual(response.status_code, 200)
         self.assertIn("L-ERAP PRO", response.text)
-        self.assertIn("重庆劳动仲裁助手", response.text)
-        self.assertIn("当前案件", response.text)
-        self.assertIn("把案情说清楚", response.text)
-        self.assertIn("智能接待", response.text)
-        self.assertNotIn("API Base URL", response.text)
-        self.assertNotIn("Workspace Home", response.text)
+        self.assertIn("当前会话", response.text)
+
+    def test_auth_and_workspace_persist_on_server(self):
+        client = TestClient(create_app())
+        email = f"worker-{uuid.uuid4().hex[:8]}@example.com"
+
+        register_res = client.post(
+            "/auth/register",
+            json={
+                "email": email,
+                "password": "Password123",
+                "full_name": "测试用户",
+                "role": "案件申请人",
+            },
+        )
+        self.assertEqual(register_res.status_code, 201)
+        self.assertIn("lerap_session", register_res.headers.get("set-cookie", ""))
+
+        me_res = client.get("/auth/me")
+        self.assertEqual(me_res.status_code, 200)
+        self.assertEqual(me_res.json()["user"]["email"], email)
+
+        change_password_res = client.post(
+            "/auth/change-password",
+            json={
+                "current_password": "Password123",
+                "new_password": "NewPass456",
+            },
+        )
+        self.assertEqual(change_password_res.status_code, 200)
+
+        logout_after_change = client.post("/auth/logout")
+        self.assertEqual(logout_after_change.status_code, 204)
+
+        login_with_old_password = client.post(
+            "/auth/login",
+            json={"email": email, "password": "Password123"},
+        )
+        self.assertEqual(login_with_old_password.status_code, 401)
+
+        login_with_new_password = client.post(
+            "/auth/login",
+            json={"email": email, "password": "NewPass456"},
+        )
+        self.assertEqual(login_with_new_password.status_code, 200)
+
+        save_res = client.post(
+            "/workspace/cases",
+            json={
+                "title": "工资报酬纠纷 · 重庆某科技公司",
+                "case_type": "工资报酬纠纷",
+                "primary_finding": "建议先补强工资流水和考勤。",
+                "readiness": "补充事实和证据",
+                "next_best_action": "生成仲裁申请书",
+                "snapshot": {
+                    "title": "工资报酬纠纷 · 重庆某科技公司",
+                    "caseForm": {
+                        "facts": sample_case()["facts"],
+                        "goal": "追回拖欠工资并准备仲裁申请书",
+                        "years": 2.2,
+                        "contact_phone": "13800000000",
+                        "applicant_info": {
+                            "name": "张三",
+                            "employer_name": "重庆某科技公司",
+                            "workplace": "重庆市渝北区",
+                            "salary": 12000,
+                        },
+                    },
+                    "evidenceText": "劳动合同\n工资流水\n聊天记录",
+                    "documentType": "仲裁申请书",
+                    "workupResult": {"workflow_stage": "补充事实和证据"},
+                    "documentResult": {"content": "劳动仲裁申请书草稿"},
+                },
+            },
+        )
+        self.assertEqual(save_res.status_code, 200)
+        case_payload = save_res.json()
+        case_id = case_payload["id"]
+        self.assertEqual(case_payload["title"], "工资报酬纠纷 · 重庆某科技公司")
+
+        list_res = client.get("/workspace/cases")
+        self.assertEqual(list_res.status_code, 200)
+        self.assertTrue(any(item["id"] == case_id for item in list_res.json()["items"]))
+
+        detail_res = client.get(f"/workspace/cases/{case_id}")
+        self.assertEqual(detail_res.status_code, 200)
+        self.assertEqual(detail_res.json()["snapshot"]["documentType"], "仲裁申请书")
+
+        activities_res = client.get("/workspace/activities")
+        self.assertEqual(activities_res.status_code, 200)
+        self.assertTrue(activities_res.json()["items"])
+
+        delete_res = client.delete(f"/workspace/cases/{case_id}")
+        self.assertEqual(delete_res.status_code, 204)
+
+        logout_res = client.post("/auth/logout")
+        self.assertEqual(logout_res.status_code, 204)
+
+        me_after_logout = client.get("/auth/me")
+        self.assertEqual(me_after_logout.status_code, 401)
 
     def test_llm_local_mode_basic(self):
         client = LLMClient()

@@ -5,13 +5,14 @@ from app.core.persistence import (
     SESSION_COOKIE_SECURE,
     SESSION_TTL_DAYS,
     authenticate_user,
+    change_user_password,
     create_session,
     create_user,
     delete_session,
     record_activity,
 )
-from app.api.dependencies import get_current_user
-from app.schemas.auth import AuthResponse, LoginRequest, RegisterRequest, UserResponse
+from app.api.dependencies import get_current_user, require_current_user
+from app.schemas.auth import AuthResponse, LoginRequest, PasswordChangeRequest, RegisterRequest, UserResponse
 
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -74,3 +75,24 @@ async def me(user=Depends(get_current_user)):  # type: ignore[no-untyped-def]
     if user is None:
         raise HTTPException(status_code=401, detail="未登录。")
     return AuthResponse(user=UserResponse(**user))
+
+
+@router.post("/change-password", response_model=AuthResponse)
+async def change_password(
+    request: PasswordChangeRequest,
+    response: Response,
+    user=Depends(require_current_user),  # type: ignore[no-untyped-def]
+):
+    try:
+        updated_user = change_user_password(
+            user_id=user["id"],
+            current_password=request.current_password,
+            new_password=request.new_password,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    token = create_session(updated_user["id"])
+    _set_session_cookie(response, token)
+    record_activity(updated_user["id"], "密码已修改", "账户密码已更新，旧会话已失效。")
+    return AuthResponse(user=UserResponse(**updated_user))
