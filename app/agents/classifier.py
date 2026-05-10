@@ -25,7 +25,7 @@ class CaseClassifierAgent(BaseAgent):
             knowledge_base=knowledge_base
         )
     
-    async def analyze(self, case_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def analyze(self, case_data: Dict[str, Any], blackboard=None) -> Dict[str, Any]:
         """分析案件并分类"""
         # 1. 从知识库获取分类体系
         classification_system = self.knowledge_base.get("legal_categories") if self.knowledge_base else []

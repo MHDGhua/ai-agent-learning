@@ -13,7 +13,10 @@ output/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+.claude/
 frontend/node_modules/
 frontend/dist/
+web/node_modules/
+web/dist/
 data/runtime/
 app.db

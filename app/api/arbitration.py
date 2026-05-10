@@ -28,6 +28,7 @@ from app.schemas.arbitration import (
     LocalReferenceResponse,
     SuccessRatePrediction,
 )
+from app.core.exceptions import CalculationError, DocumentGenerationError
 from app.services.arbitration_document_generator import ArbitrationDocumentGenerator, DocumentType
 from app.services.arbitration_analyzer import ArbitrationAnalyzer, ArbitrationAnalysis
 from app.services.chongqing_calculator import ChongqingLaborCalculator
@@ -35,6 +36,7 @@ from app.services.legal_workflow import LegalWorkflowAnalyzer
 from app.services.rag_retriever import retrieve_context
 from app.services.llm_client import LLMClient
 from app.services.observability import langsmith_status, traceable_case
+from app.services.document_post_processor import DocumentPostProcessor
 from app.agents.coordinator import CoordinatorAgent
 from app.services.api_factory import APIFactory
 from app.config.combined_config import API_CLIENT_CONFIG
@@ -316,9 +318,9 @@ async def analyze_case(request: CaseAnalysisRequest):
             logger.info(f"案件分析完成: {request.case_type}")
             return response
         
-    except Exception as e:
-        logger.error(f"案件分析失败: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"案件分析失败: {str(e)}")
+    except Exception:
+        logger.exception("案件分析失败")
+        raise HTTPException(status_code=500, detail="案件分析失败，请稍后重试。")
 
 
 @traceable_case("arbitration.analyze_local")
@@ -409,27 +411,39 @@ async def generate_document(request: DocumentGenerationRequest):
             try:
                 doc_type = DocumentType(request.document_type)
             except ValueError:
-                raise HTTPException(status_code=400, detail=f"不支持的文书类型: {request.document_type}")
+                raise DocumentGenerationError(
+                    f"不支持的文书类型: {request.document_type}",
+                    detail=f"支持的类型: {[t.value for t in DocumentType]}"
+                )
             
             # 调用文书生成服务
             generator = ArbitrationDocumentGenerator()
             content = await generator.generate_arbitration_document(doc_type, request.case_data)
-            
+
+            # 后处理校验
+            post_processor = DocumentPostProcessor()
+            pp_report = post_processor.validate(content, request.document_type, request.case_data)
+            pp_warnings = pp_report.warnings + pp_report.errors
+
+            advice_parts = [f"已生成{request.document_type}，请核对当事人信息、仲裁请求金额和证据页码后使用。"]
+            if pp_warnings:
+                advice_parts.append("自动校验发现：" + "；".join(pp_warnings[:3]))
+
             # 构造响应
             response = DocumentGenerationResponse(
                 document_type=request.document_type,
                 content=content,
                 generated_at=datetime.now().isoformat(),
-                advice=f"已生成{request.document_type}，请核对当事人信息、仲裁请求金额和证据页码后使用。",
+                advice="".join(advice_parts),
                 document={"document_type": request.document_type, "content": content}
             )
             
             logger.info(f"文书生成完成: {request.document_type}")
             return response
         
-    except Exception as e:
-        logger.error(f"文书生成失败: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"文书生成失败: {str(e)}")
+    except Exception:
+        logger.exception("文书生成失败")
+        raise HTTPException(status_code=500, detail="文书生成失败，请稍后重试。")
 
 
 @router.post("/validate-document", response_model=DocumentValidationResponse)
@@ -483,9 +497,9 @@ async def estimate_cost(request: CaseAnalysisRequest):
             logger.info("仲裁成本估算完成")
             return response
         
-    except Exception as e:
-        logger.error(f"成本估算失败: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"成本估算失败: {str(e)}")
+    except Exception:
+        logger.exception("成本估算失败")
+        raise HTTPException(status_code=500, detail="成本估算失败，请稍后重试。")
 
 
 @router.post("/predict-success-rate", response_model=SuccessRatePrediction)
@@ -529,9 +543,9 @@ async def predict_success_rate(request: CaseAnalysisRequest):
             logger.info("仲裁成功率预测完成")
             return response
         
-    except Exception as e:
-        logger.error(f"成功率预测失败: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"成功率预测失败: {str(e)}")
+    except Exception:
+        logger.exception("成功率预测失败")
+        raise HTTPException(status_code=500, detail="成功率预测失败，请稍后重试。")
 
 
 @router.post("/calculate-claim", response_model=ClaimCalculationResponse)
@@ -578,9 +592,9 @@ async def calculate_claim(request: ClaimCalculationRequest):
 
     except HTTPException:
         raise
-    except Exception as e:
-        logger.error(f"金额计算失败: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"金额计算失败: {str(e)}")
+    except Exception:
+        logger.exception("金额计算失败")
+        raise HTTPException(status_code=500, detail="金额计算失败，请稍后重试。")
 
 
 @router.post("/intake-checklist", response_model=IntakeChecklistResponse)
@@ -627,6 +641,8 @@ async def case_workup(request: CaseAnalysisRequest):
     """
     产品化综合研判：一次返回分析、补证、成本、成功率、本地参考和建议文书。
     """
+    import asyncio
+
     pipeline = PipelineTracker()
     analysis = await _analyze_case_local(request)
     pipeline.record(
@@ -645,15 +661,31 @@ async def case_workup(request: CaseAnalysisRequest):
         summary=f"missing={len(intake.missing_questions or [])}",
         warnings=intake.missing_questions[:3],
     )
+
+    # Parallelize independent calls
     analyzer = ArbitrationAnalyzer()
-    cost_estimate = await analyzer.estimate_cost(request.model_dump())
+    case_dump = request.model_dump()
+    query = f"{request.case_type} {request.facts}"
+
+    async def _get_cost():
+        return await analyzer.estimate_cost(case_dump)
+
+    async def _get_prediction():
+        return await analyzer.predict_success_rate(case_dump)
+
+    async def _get_references():
+        return _format_local_references(query, 5)
+
+    cost_estimate, prediction, references = await asyncio.gather(
+        _get_cost(), _get_prediction(), _get_references()
+    )
+
     cost = ArbitrationCostEstimate(
         **cost_estimate,
         cost_estimate=cost_estimate["total_cost"],
         explanation="劳动争议仲裁不收费；这里主要估算律师费、复印交通等准备成本。",
     )
     pipeline.record("cost_estimate", summary=f"total={cost.total_cost}")
-    prediction = await analyzer.predict_success_rate(request.model_dump())
     success_prediction = SuccessRatePrediction(
         success_probability=prediction["success_probability"],
         probability_value=prediction["probability_value"],
@@ -667,8 +699,6 @@ async def case_workup(request: CaseAnalysisRequest):
         summary=f"{success_prediction.success_probability}/{success_prediction.probability_value}",
         warnings=success_prediction.key_factors,
     )
-    query = f"{request.case_type} {request.facts}"
-    references = _format_local_references(query, 5)
     pipeline.record("local_references", summary=f"count={len(references)}")
     merged_missing = list(dict.fromkeys(
         [*(analysis.missing_info or []), *(intake.missing_questions or [])]
@@ -735,6 +765,6 @@ async def get_case_examples():
         
         return {"cases": sample_cases}
         
-    except Exception as e:
-        logger.error(f"获取案例失败: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"获取案例失败: {str(e)}")
+    except Exception:
+        logger.exception("获取案例失败")
+        raise HTTPException(status_code=500, detail="获取案例失败，请稍后重试。")

@@ -18,7 +18,7 @@ from .combined_config import (
 
 # 系统基本信息
 APP_NAME = "重庆劳动法专家系统"
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 
 # API配置
 API_HOST = os.getenv("API_HOST", "0.0.0.0")

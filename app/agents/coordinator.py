@@ -1,16 +1,18 @@
 """协调仲裁者 Agent。"""
 
+import time
 from typing import Dict, Any, List, Optional
 from .base import BaseAgent, AgentCapability
 from .chongqing_labor_law import ChongqingLaborLawAgent
 import json
 
+from app.core.blackboard import CaseBlackboard, AnalysisStage
 from app.services.legal_workflow import LegalWorkflowAnalyzer
 
 
 class CoordinatorAgent(BaseAgent):
     """协调仲裁者 Agent"""
-    
+
     def __init__(self, llm_client, knowledge_base):
         capability = AgentCapability(
             domain="coordination",
@@ -29,15 +31,21 @@ class CoordinatorAgent(BaseAgent):
         self.active_cases = {}
         self.workflow_analyzer = LegalWorkflowAnalyzer()
 
-    async def analyze(self, case_data: Dict[str, Any]) -> Dict[str, Any]:
-        """满足 BaseAgent 接口，返回基础协调意见。"""
+    async def analyze(self, case_data: Dict[str, Any], blackboard: Optional[CaseBlackboard] = None) -> Dict[str, Any]:
         workflow = self.workflow_analyzer.analyze(case_data)
-        return {
+        result = {
             "summary": "已接收案件，可协调重庆劳动法专家和对抗审查流程。",
             "case_type": case_data.get("case_type", "劳动纠纷"),
             "workflow": workflow.to_dict(),
             "recommendations": workflow.action_plan[:3],
         }
+        if blackboard:
+            blackboard.workflow_analysis = workflow.to_dict()
+            blackboard.record_agent(
+                self.agent_id, self.agent_name, AnalysisStage.WORKFLOW_ANALYSIS,
+                summary="基础协调意见已生成",
+            )
+        return result
 
     async def collaborate(
         self,
@@ -45,30 +53,46 @@ class CoordinatorAgent(BaseAgent):
         case_data: Dict[str, Any]
     ) -> Dict[str, Any]:
         return await self.analyze(case_data)
-    
+
     async def register_agent(self, agent: BaseAgent):
-        """注册 Agent"""
         self.registered_agents[agent.agent_id] = agent
-        print(f"[协调者] 已注册 Agent: {agent.agent_name} ({agent.agent_id})")
-    
+
     async def coordinate_labor_analysis(
         self,
         case_id: str,
         case_data: Dict[str, Any],
-        labor_agent: ChongqingLaborLawAgent
+        labor_agent: ChongqingLaborLawAgent,
+        blackboard: Optional[CaseBlackboard] = None,
     ) -> Dict[str, Any]:
-        """协调多个 Agent 进行分析"""
+        """协调多个 Agent 进行分析，结果写入 blackboard"""
+
+        if blackboard is None:
+            blackboard = CaseBlackboard(case_id=case_id, raw_input=case_data)
 
         workflow = self.workflow_analyzer.analyze(case_data).to_dict()
-        relevant_agents = [labor_agent]
+        blackboard.workflow_analysis = workflow
+        blackboard.record_agent(
+            self.agent_id, self.agent_name, AnalysisStage.WORKFLOW_ANALYSIS,
+            summary="工作流分析完成",
+        )
+
         self.active_cases[case_id] = {
             "status": "processing",
-            "agents": {agent.agent_id: None for agent in relevant_agents},
+            "agents": {labor_agent.agent_id: None},
             "workflow": workflow,
         }
 
-        labor_result = await labor_agent.analyze(case_data)
+        t0 = time.perf_counter()
+        labor_result = await labor_agent.analyze(case_data, blackboard=blackboard)
         labor_result = self._normalize_agent_result(labor_result)
+        duration = (time.perf_counter() - t0) * 1000
+
+        blackboard.legal_opinion = labor_result
+        blackboard.set_confidence(labor_agent.agent_id, labor_result.get("confidence", 0.85))
+        blackboard.record_agent(
+            labor_agent.agent_id, labor_agent.agent_name, AnalysisStage.LEGAL_OPINION,
+            duration_ms=duration, summary=labor_result.get("summary", "")[:100],
+        )
 
         agent_results = {
             labor_agent.agent_id: {
@@ -81,12 +105,19 @@ class CoordinatorAgent(BaseAgent):
 
         conflicts = self._detect_conflicts(agent_results, workflow)
         if conflicts:
-            print(f"[协调者] 在案例 {case_id} 中检测到 {len(conflicts)} 个冲突")
+            blackboard.conflicts = conflicts
             resolved = await self._resolve_conflicts(conflicts, agent_results, workflow)
             agent_results.update(resolved)
 
         final_opinion = await self._generate_final_opinion(case_data, agent_results, workflow)
         recommendations = self._generate_recommendations(final_opinion, workflow)
+
+        blackboard.final_synthesis = final_opinion
+        blackboard.coordination_notes = recommendations
+        blackboard.record_agent(
+            self.agent_id, self.agent_name, AnalysisStage.FINAL_SYNTHESIS,
+            summary="最终意见已生成",
+        )
 
         self.active_cases[case_id].update({
             "status": "completed",
@@ -102,8 +133,9 @@ class CoordinatorAgent(BaseAgent):
             "final_opinion": final_opinion,
             "recommendations": recommendations,
             "workflow": workflow,
+            "blackboard_summary": blackboard.to_summary(),
         }
-    
+
     def _normalize_agent_result(self, result: Any) -> Dict[str, Any]:
         if isinstance(result, dict):
             return result
@@ -114,7 +146,6 @@ class CoordinatorAgent(BaseAgent):
         agent_results: Dict[str, Any],
         workflow: Dict[str, Any],
     ) -> List[Dict[str, Any]]:
-        """检测劳动法分析内部冲突"""
         conflicts: List[Dict[str, Any]] = []
         workflow_warnings = workflow.get("warnings", []) or []
         limitation = workflow.get("limitation", {}) or {}
@@ -143,14 +174,13 @@ class CoordinatorAgent(BaseAgent):
                     "issue": "风险提示与结构化分析未对齐",
                 })
         return conflicts
-    
+
     async def _resolve_conflicts(
-        self, 
-        conflicts: List[Dict[str, Any]], 
+        self,
+        conflicts: List[Dict[str, Any]],
         agent_results: Dict[str, Any],
         workflow: Dict[str, Any],
     ) -> Dict[str, Any]:
-        """解决冲突"""
         conflict_descriptions = [f"{c['agent1']}->{c['issue']}" for c in conflicts]
         resolution_note = "；".join(conflict_descriptions)
         if self.llm_client:
@@ -179,14 +209,13 @@ class CoordinatorAgent(BaseAgent):
                 "resolution_note": resolution_note,
             }
         return resolved
-    
+
     async def _generate_final_opinion(
         self,
         case_data: Dict[str, Any],
         agent_results: Dict[str, Any],
         workflow: Dict[str, Any],
     ) -> Dict[str, Any]:
-        """生成最终意见"""
         analyses = []
         for info in agent_results.values():
             analysis = info.get("analysis", {}) or {}
@@ -215,7 +244,7 @@ class CoordinatorAgent(BaseAgent):
             "summary": final_opinion_text,
             "analysis_details": agent_results
         }
-    
+
     def _compose_local_final_opinion(
         self,
         case_data: Dict[str, Any],
@@ -238,7 +267,6 @@ class CoordinatorAgent(BaseAgent):
         )
 
     def _generate_recommendations(self, final_opinion: Dict[str, Any], workflow: Dict[str, Any]) -> List[str]:
-        """生成建议列表"""
         recommendations = list(workflow.get("action_plan", []) or [])
         if workflow.get("limitation", {}).get("status") == "possibly_expired":
             recommendations.insert(0, "优先核查仲裁时效是否存在中断或中止。")
@@ -250,23 +278,26 @@ class CoordinatorAgent(BaseAgent):
         if summary and "对抗审查" not in summary:
             recommendations.append("如需提高论证强度，可再进行一次红蓝对抗审查。")
         return list(dict.fromkeys(recommendations))[:6]
-    
+
     async def handle_query(self, sender_id: str, content: Dict[str, Any]):
-        """处理查询消息"""
-        # 实现查询处理逻辑
         pass
-    
+
     async def handle_broadcast(self, sender_id: str, content: Dict[str, Any]):
-        """处理广播消息"""
-        # 实现广播处理逻辑
         pass
-    
+
     async def conduct_opposition_review(
         self,
         case_data: Dict[str, Any],
-        original_analysis: Dict[str, Any]
+        original_analysis: Dict[str, Any],
+        blackboard: Optional[CaseBlackboard] = None,
     ) -> Dict[str, Any]:
-        """进行红蓝对抗审查"""
         from app.agents.red_blue_lawyer import OppositionReviewerAgent
         reviewer = OppositionReviewerAgent(self.llm_client, self.knowledge_base)
-        return await reviewer.conduct_opposition_review(case_data, original_analysis)
+        result = await reviewer.conduct_opposition_review(case_data, original_analysis)
+        if blackboard:
+            blackboard.opposition_synthesis = result
+            blackboard.record_agent(
+                self.agent_id, self.agent_name, AnalysisStage.OPPOSITION_REVIEW,
+                summary="红蓝对抗审查完成",
+            )
+        return result

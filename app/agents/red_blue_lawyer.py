@@ -4,7 +4,10 @@
 实现红蓝双方律师在仲裁分析中的对抗审查机制
 """
 
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.core.blackboard import CaseBlackboard
 from dataclasses import dataclass
 from enum import Enum
 import asyncio
@@ -103,7 +106,7 @@ class RedBlueLawyerAgent(BaseAgent):
         self.role = role
         self.name = f"{'红方' if role == LawyerRole.RED else '蓝方'}律师"
 
-    async def analyze(self, case_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def analyze(self, case_data: Dict[str, Any], blackboard: Optional['CaseBlackboard'] = None) -> Dict[str, Any]:
         return await self.analyze_case_opposition(case_data, {})
 
     async def collaborate(
@@ -400,7 +403,7 @@ class OppositionReviewerAgent(BaseAgent):
         )
         self.name = "对抗审查员"
 
-    async def analyze(self, case_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def analyze(self, case_data: Dict[str, Any], blackboard: Optional['CaseBlackboard'] = None) -> Dict[str, Any]:
         result = await self.conduct_opposition_review(case_data, {})
         return {
             "red_lawyer_analysis": result.red_lawyer_analysis,

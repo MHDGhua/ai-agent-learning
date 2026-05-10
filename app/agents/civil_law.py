@@ -24,7 +24,7 @@ class CivilLawAgent(BaseAgent):
             knowledge_base=knowledge_base
         )
     
-    async def analyze(self, case_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def analyze(self, case_data: Dict[str, Any], blackboard=None) -> Dict[str, Any]:
         """分析民事案件"""
         # 1. 从知识库获取相关法律条文
         description = case_data.get("description", case_data.get("facts", ""))

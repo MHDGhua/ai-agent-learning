@@ -3,7 +3,10 @@
 """
 
 from .base import BaseAgent, AgentCapability
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.core.blackboard import CaseBlackboard
 
 from app.services.legal_workflow import LegalWorkflowAnalyzer
 from app.services.chongqing_precedent import ChongqingPrecedentAdvisor
@@ -37,7 +40,7 @@ class ChongqingLaborLawAgent(BaseAgent):
         self.workflow_analyzer = LegalWorkflowAnalyzer()
         self.precedent_advisor = ChongqingPrecedentAdvisor()
     
-    async def analyze(self, case_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def analyze(self, case_data: Dict[str, Any], blackboard: Optional['CaseBlackboard'] = None) -> Dict[str, Any]:
         """分析重庆劳动法案件，优先输出确定性结构化结果。"""
         description = case_data.get("description", case_data.get("facts", ""))
         workflow = self.workflow_analyzer.analyze(case_data)

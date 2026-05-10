@@ -5,17 +5,20 @@ import os
 from pathlib import Path
 from typing import List
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.trustedhost import TrustedHostMiddleware
+
+from app.core.exceptions import LERAPError
 
 from app.api.auth import router as auth_router
 from app.api.arbitration import router as arbitration_router
 from app.api.workspace import router as workspace_router
 from app.api.webhooks import register_routes
 from app.core.persistence import ensure_database
+from app.config.settings import VERSION
 from app.services.api_factory import APIFactory
 from app.utils.logger import setup_logger
 
@@ -71,12 +74,19 @@ def create_app() -> FastAPI:
     ensure_database()
     app = FastAPI(
         title="重庆劳动法专家系统",
-        version="1.0.0",
+        version=VERSION,
         description="专注于重庆地区劳动法的智能咨询系统"
     )
     
     _configure_security_middleware(app)
-    
+
+    @app.exception_handler(LERAPError)
+    async def lerap_error_handler(request: Request, exc: LERAPError):
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={"error": exc.user_message, "detail": exc.detail},
+        )
+
     # 注册API路由
     app.include_router(auth_router)
     app.include_router(arbitration_router)

@@ -1,6 +1,7 @@
 # PROJECT_STATE
 
 最后更新：2026-05-10
+当前验收版本：v1.1.0
 
 ## 项目定位
 
@@ -53,6 +54,9 @@ L-ERAP-PRO 是面向普通劳动者的重庆劳动仲裁助手，不是专业律
 - 新增 `app/core/persistence.py` 轻量持久化层，默认数据库切到 `data/runtime/lerap_app.db`，密码采用 PBKDF2 哈希，登录会话采用 HttpOnly Cookie。
 - 前端已从单文件静态页切换到 Vue 3 + Vite 工程结构，入口改为 `frontend/src/App.vue`，支持登录、案情分析、文书生成和服务端保存案件。
 - 生产部署已改为 Docker 多阶段构建前端产物，由 FastAPI 统一提供前端静态资源，Caddy 只保留同域 HTTPS 反向代理职责。
+- `tests/test_api_integration.py` 已改为可被 `unittest discover` 发现的真实回归测试，不再空跑。
+- 后端统一错误返回已收敛为通用提示，避免把内部异常原文直接暴露给客户端。
+- 新增本轮验收文档：`docs/初步验收报告与操作手册.md`。
 - 新增协作者状态文件夹：`docs/status/PROJECT_BRIEF.md`，集中说明项目定位、进度、接口、技术要求、分工和协作规则。
 - 前端已重做为“接待式单案件界面”，不再沿袭旧的工作台 / SaaS 导航结构。
 - 主界面改为“说案情 -> 看结论 -> 整理材料 -> 推进进度”的单案流程，文书、重庆参考、历史记录和本地身份都改为次级能力。
@@ -73,7 +77,11 @@ L-ERAP-PRO 是面向普通劳动者的重庆劳动仲裁助手，不是专业律
 
 ## 最近验证
 
-- 2026-05-10：`.\.venv\Scripts\python.exe -m unittest discover -s tests -v` 通过，11 个测试 OK，新增资料更新与旧版记录导入相关回归覆盖。
+- 2026-05-10：`python -m unittest discover -s tests -v` 通过，15 个测试 OK，`tests/test_api_integration.py` 已纳入自动发现。
+- 2026-05-10：`python -m compileall app tests` 通过。
+- 2026-05-10：`python scripts/run_case_matrix.py` 通过，20/20 案例 PASS。
+- 2026-05-10：`cd frontend && npm run build` 通过，前端重新构建成功。
+- 2026-05-10：`python -m unittest discover -s tests -v` 通过，12 个测试 OK，`tests/test_api_integration.py` 已纳入自动发现。
 - 2026-05-10：`cd frontend && npm run build` 通过，前端组件化拆分后仍可正常构建。
 - 2026-05-10：`.\.venv\Scripts\python.exe -m compileall app tests` 通过，新增服务层与迁移接口未破坏编译。
 - 2026-05-10：`.\.venv\Scripts\python.exe -m unittest discover -s tests -v` 通过，11 个测试 OK，新增修改密码链路回归。

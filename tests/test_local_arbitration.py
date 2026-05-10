@@ -363,7 +363,8 @@ class LocalArbitrationTests(unittest.TestCase):
     def test_severance_year_normalization(self):
         self.assertEqual(ChongqingLaborCalculator.normalize_service_years(2.2), 2.5)
         self.assertEqual(ChongqingLaborCalculator.normalize_service_years(2.6), 3.0)
-        self.assertEqual(ChongqingLaborCalculator.calculate_severance(10000, 2.2, "合法解除"), 25000)
+        calc = ChongqingLaborCalculator()
+        self.assertEqual(calc.calculate_severance(10000, 2.2, "合法解除"), 25000)
 
 
 if __name__ == "__main__":
