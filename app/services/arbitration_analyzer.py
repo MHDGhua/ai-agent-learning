@@ -16,6 +16,8 @@ from app.services.chongqing_calculator import ChongqingLaborCalculator
 from app.services.legal_workflow import LegalWorkflowAnalyzer
 from app.services.chongqing_precedent import ChongqingPrecedentAdvisor
 from app.agents.coordinator import CoordinatorAgent
+from app.utils.json_helpers import safe_json_loads
+from app.utils.parsers import parse_risk_level, parse_success_probability
 
 
 class RiskLevel(str, Enum):
@@ -67,23 +69,6 @@ class ArbitrationAnalyzer:
         self.workflow_analyzer = LegalWorkflowAnalyzer()
         self.precedent_advisor = ChongqingPrecedentAdvisor()
 
-    def _safe_json_loads(self, raw: str) -> Dict[str, Any]:
-        raw = (raw or "").strip()
-        if not raw:
-            return {}
-        try:
-            parsed = json.loads(raw)
-        except Exception:
-            start = raw.find("{")
-            end = raw.rfind("}")
-            if start < 0 or end <= start:
-                return {}
-            try:
-                parsed = json.loads(raw[start : end + 1])
-            except Exception:
-                return {}
-        return parsed if isinstance(parsed, dict) else {}
-
     def _normalize_cost_estimate(self, value: Any) -> Dict[str, float]:
         base = {
             "arbitration_fee": 0.0,
@@ -107,26 +92,6 @@ class ArbitrationAnalyzer:
         if isinstance(value, tuple):
             return list(value)
         return [value]
-
-    def _parse_risk_level(self, raw_value: Any, fallback: RiskLevel) -> RiskLevel:
-        text = str(raw_value or "").strip()
-        if "高" in text:
-            return RiskLevel.HIGH
-        if "低" in text:
-            return RiskLevel.LOW
-        if "中" in text:
-            return RiskLevel.MEDIUM
-        return fallback
-
-    def _parse_success_probability(self, raw_value: Any, fallback: SuccessProbability) -> SuccessProbability:
-        text = str(raw_value or "").strip()
-        if "高" in text:
-            return SuccessProbability.HIGH
-        if "低" in text:
-            return SuccessProbability.LOW
-        if "中" in text:
-            return SuccessProbability.MEDIUM
-        return fallback
 
     def _build_case_similarity(self, context_data: List[str], local_reference: Dict[str, Any]) -> List[Dict[str, Any]]:
         similarity: List[Dict[str, Any]] = []
@@ -180,7 +145,7 @@ class ArbitrationAnalyzer:
             "risk_level": risk_level,
             "risk_factors": risk_factors,
             "cost_estimate": cost_estimate,
-            "success_probability": self._parse_success_probability(
+            "success_probability": parse_success_probability(
                 success_prediction.get("success_probability"),
                 SuccessProbability.MEDIUM,
             ),
@@ -279,7 +244,7 @@ class ArbitrationAnalyzer:
         try:
             response = await self.llm_client.generate_draft(prompt, "audit", context_data)
             try:
-                parsed_data = self._safe_json_loads(response)
+                parsed_data = safe_json_loads(response)
             except Exception:
                 parsed_data = {}
         except Exception as e:
@@ -301,10 +266,10 @@ class ArbitrationAnalyzer:
 
         analysis = ArbitrationAnalysis(
             case_type=str(merged.get("case_type", case_type)),
-            risk_level=self._parse_risk_level(merged.get("risk_level"), base_analysis["risk_level"]),
+            risk_level=parse_risk_level(merged.get("risk_level"), base_analysis["risk_level"]),
             risk_factors=list(dict.fromkeys(self._ensure_list(merged.get("risk_factors") or base_analysis["risk_factors"]))),
             cost_estimate=cost_estimate,
-            success_probability=self._parse_success_probability(
+            success_probability=parse_success_probability(
                 merged.get("success_probability"),
                 base_analysis["success_probability"],
             ),
