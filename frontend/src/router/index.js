@@ -1,5 +1,8 @@
 import { createRouter, createWebHistory } from "vue-router";
 
+import AssistantPage from "../pages/AssistantPage.vue";
+import HomePage from "../pages/HomePage.vue";
+
 function createRoutePlaceholder(title) {
   return {
     name: `${title}Placeholder`,
@@ -11,7 +14,7 @@ const routes = [
   {
     path: "/",
     name: "home",
-    component: createRoutePlaceholder("法律科技能力库"),
+    component: HomePage,
     meta: { public: true },
   },
   {
@@ -29,7 +32,7 @@ const routes = [
   {
     path: "/assistant",
     name: "assistant",
-    component: createRoutePlaceholder("案件助手工作区"),
+    component: AssistantPage,
     meta: { requiresAuth: true },
   },
   {
