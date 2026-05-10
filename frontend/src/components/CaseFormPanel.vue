@@ -22,7 +22,7 @@
       </div>
     </div>
 
-    <div v-if="errorMessage" class="notice error">{{ errorMessage }}</div>
+    <ErrorAlert :message="errorMessage" title="操作失败" :dismissible="false" />
     <div v-if="successMessage" class="notice success">{{ successMessage }}</div>
     <div v-if="!user" class="notice">
       可以先直接整理案情；如果希望保存历史、恢复草稿和跨设备继续办理，请先登录账户。
@@ -112,6 +112,8 @@
 </template>
 
 <script setup>
+import ErrorAlert from "./ErrorAlert.vue";
+
 defineProps({
   loading: { type: Boolean, default: false },
   user: { type: Object, default: null },

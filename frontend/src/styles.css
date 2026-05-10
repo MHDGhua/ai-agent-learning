@@ -980,6 +980,60 @@ h3 {
   gap: 18px;
 }
 
+.assistant-progress {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.assistant-progress-step {
+  position: relative;
+  display: grid;
+  grid-template-columns: 42px 1fr;
+  align-items: center;
+  gap: 10px;
+  min-height: 58px;
+  padding: 10px 12px;
+  border: 1px solid rgba(221, 213, 200, 0.82);
+  border-radius: 14px;
+  color: var(--muted);
+  background: rgba(255, 253, 248, 0.78);
+  box-shadow: 0 14px 34px rgba(31, 36, 51, 0.05);
+}
+
+.assistant-progress-step span {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  color: var(--muted);
+  background: var(--surface-soft);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.assistant-progress-step strong {
+  color: inherit;
+  font-size: 14px;
+}
+
+.assistant-progress-step.active {
+  color: var(--brand);
+  border-color: rgba(31, 94, 255, 0.24);
+  background: rgba(31, 94, 255, 0.08);
+}
+
+.assistant-progress-step.active span,
+.assistant-progress-step.done span {
+  color: #ffffff;
+  background: linear-gradient(135deg, var(--brand), var(--brand-2));
+}
+
+.assistant-progress-step.done {
+  color: var(--good);
+}
+
 .panel {
   display: grid;
   gap: 18px;
@@ -1503,6 +1557,7 @@ h3 {
 
 @media (max-width: 940px) {
   .content-grid,
+  .assistant-progress,
   .metric-grid,
   .two-column,
   .validation-grid,

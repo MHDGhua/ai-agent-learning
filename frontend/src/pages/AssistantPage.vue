@@ -39,6 +39,18 @@
         </div>
       </header>
 
+      <nav class="assistant-progress" aria-label="案件办理步骤">
+        <div
+          v-for="step in assistantSteps"
+          :key="step.label"
+          class="assistant-progress-step"
+          :class="{ active: step.active, done: step.done }"
+        >
+          <span>{{ step.index }}</span>
+          <strong>{{ step.label }}</strong>
+        </div>
+      </nav>
+
       <div class="content-grid">
         <CaseFormPanel
           :loading="app.loading"
@@ -103,7 +115,7 @@
 </template>
 
 <script setup>
-import { proxyRefs, watch } from "vue";
+import { computed, proxyRefs, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import AnalysisPanel from "../components/AnalysisPanel.vue";
@@ -121,6 +133,33 @@ const route = useRoute();
 const router = useRouter();
 const app = proxyRefs(useWorkspaceApp());
 let bootstrapped = false;
+
+const assistantSteps = computed(() => [
+  {
+    index: "01",
+    label: "案件分析",
+    done: Boolean(app.workupResult),
+    active: !app.workupResult,
+  },
+  {
+    index: "02",
+    label: "赔偿计算",
+    done: Boolean(app.workupResult),
+    active: false,
+  },
+  {
+    index: "03",
+    label: "文书生成",
+    done: Boolean(app.documentResult),
+    active: Boolean(app.workupResult) && !app.documentResult,
+  },
+  {
+    index: "04",
+    label: "完成",
+    done: Boolean(app.documentResult && app.activeCaseId),
+    active: Boolean(app.documentResult && !app.activeCaseId),
+  },
+]);
 
 function normalizeCaseId(value) {
   if (Array.isArray(value)) {
