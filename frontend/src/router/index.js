@@ -1,14 +1,13 @@
 import { createRouter, createWebHistory } from "vue-router";
 
+import AdminSettingsPage from "../pages/AdminSettingsPage.vue";
 import AssistantPage from "../pages/AssistantPage.vue";
+import CasesPage from "../pages/CasesPage.vue";
 import HomePage from "../pages/HomePage.vue";
-
-function createRoutePlaceholder(title) {
-  return {
-    name: `${title}Placeholder`,
-    template: `<main class="route-placeholder"><p class="eyebrow">L-ERAP PRO</p><h1>${title}</h1></main>`,
-  };
-}
+import LoginPage from "../pages/LoginPage.vue";
+import NotFoundPage from "../pages/NotFoundPage.vue";
+import RegisterPage from "../pages/RegisterPage.vue";
+import SettingsPage from "../pages/SettingsPage.vue";
 
 const routes = [
   {
@@ -20,13 +19,13 @@ const routes = [
   {
     path: "/login",
     name: "login",
-    component: createRoutePlaceholder("登录页"),
+    component: LoginPage,
     meta: { public: true, guestOnly: true },
   },
   {
     path: "/register",
     name: "register",
-    component: createRoutePlaceholder("注册页"),
+    component: RegisterPage,
     meta: { public: true, guestOnly: true },
   },
   {
@@ -38,25 +37,25 @@ const routes = [
   {
     path: "/settings",
     name: "settings",
-    component: createRoutePlaceholder("个人设置页"),
+    component: SettingsPage,
     meta: { requiresAuth: true },
   },
   {
     path: "/cases",
     name: "cases",
-    component: createRoutePlaceholder("我的案件列表"),
+    component: CasesPage,
     meta: { requiresAuth: true },
   },
   {
     path: "/admin/settings",
     name: "admin-settings",
-    component: createRoutePlaceholder("系统设置"),
+    component: AdminSettingsPage,
     meta: { requiresAuth: true, requiresAdmin: true },
   },
   {
     path: "/:pathMatch(.*)*",
     name: "not-found",
-    component: createRoutePlaceholder("404 页面"),
+    component: NotFoundPage,
     meta: { public: true },
   },
 ];
