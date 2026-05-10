@@ -101,6 +101,11 @@ ENABLE_CHROMA_RETRIEVAL=true
 python scripts/process_laborlaw_dataset.py
 ```
 
+### 运行测试
+```bash
+python -m pytest tests
+```
+
 ### 导入外部数据
 ```bash
 python scripts/import_external_data.py

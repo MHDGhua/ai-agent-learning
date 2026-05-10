@@ -57,6 +57,7 @@ class LocalArbitrationTests(unittest.TestCase):
         frontend_root = Path(__file__).resolve().parents[1] / "frontend" / "src"
         visible_files = [
             frontend_root / "App.vue",
+            frontend_root / "pages" / "HomePage.vue",
             frontend_root / "components" / "AppSidebar.vue",
             frontend_root / "components" / "AnalysisPanel.vue",
             frontend_root / "components" / "CaseFormPanel.vue",
