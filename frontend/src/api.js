@@ -57,6 +57,12 @@ export const authApi = {
   me() {
     return apiRequest("/auth/me");
   },
+  updateProfile(body) {
+    return apiRequest("/auth/profile", {
+      method: "PUT",
+      body: JSON.stringify(body),
+    });
+  },
   changePassword(body) {
     return apiRequest("/auth/change-password", {
       method: "POST",
@@ -106,5 +112,11 @@ export const workspaceApi = {
   },
   listActivities(limit = 12) {
     return apiRequest(`/workspace/activities?limit=${limit}`);
+  },
+  importLegacy(body) {
+    return apiRequest("/workspace/import-legacy", {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
   },
 };

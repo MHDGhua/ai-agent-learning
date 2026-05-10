@@ -41,6 +41,10 @@ L-ERAP-PRO 是面向普通劳动者的重庆劳动仲裁助手，不是专业律
 
 ## 已完成的重要改动
 
+- 认证与工作区逻辑已新增服务层：`app/services/auth_service.py`、`app/services/workspace_service.py`，路由不再直接承担全部持久化调用细节。
+- 已新增账户资料更新接口 `PUT /auth/profile`，支持修改姓名和身份标签。
+- 已新增旧版浏览器本地记录导入接口 `POST /workspace/import-legacy`，可把旧 `localStorage` 历史案件和活动记录迁入服务端。
+- 前端主页面已拆分为组件与 composable：`frontend/src/components/*` 与 `frontend/src/composables/useWorkspaceApp.js`，不再把所有状态和视图堆在单个 `App.vue`。
 - 仲裁接口请求/响应模型已从 `app/api/arbitration.py` 拆分到 `app/schemas/arbitration.py`，开始收敛 API 层与 Schema 层职责。
 - 真实账户已补充修改密码接口 `/auth/change-password`，新密码要求至少 8 位且同时包含字母和数字，修改后旧会话全部失效并重新签发当前会话。
 - 前端已接入文书校验结果展示，生成文书后会自动调用 `/arbitration/validate-document`，展示问题、警告和建议。
@@ -69,6 +73,9 @@ L-ERAP-PRO 是面向普通劳动者的重庆劳动仲裁助手，不是专业律
 
 ## 最近验证
 
+- 2026-05-10：`.\.venv\Scripts\python.exe -m unittest discover -s tests -v` 通过，11 个测试 OK，新增资料更新与旧版记录导入相关回归覆盖。
+- 2026-05-10：`cd frontend && npm run build` 通过，前端组件化拆分后仍可正常构建。
+- 2026-05-10：`.\.venv\Scripts\python.exe -m compileall app tests` 通过，新增服务层与迁移接口未破坏编译。
 - 2026-05-10：`.\.venv\Scripts\python.exe -m unittest discover -s tests -v` 通过，11 个测试 OK，新增修改密码链路回归。
 - 2026-05-10：`cd frontend && npm run build` 通过，前端已包含自动保存与文书校验展示改动。
 - 2026-05-10：`.\.venv\Scripts\python.exe -m compileall app tests` 通过，新增 `app/schemas/arbitration.py` 与认证安全改动未破坏编译。

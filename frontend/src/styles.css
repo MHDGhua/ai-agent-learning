@@ -269,6 +269,10 @@ p {
   gap: 12px;
 }
 
+.migration-card h2 {
+  font-size: 16px;
+}
+
 .saved-card,
 .activity-card,
 .metric-card,

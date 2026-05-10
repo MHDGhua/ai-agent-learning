@@ -200,6 +200,26 @@ def get_user_by_id(user_id: int) -> Optional[Dict[str, Any]]:
     return _row_to_user(row)
 
 
+def update_user_profile(*, user_id: int, full_name: str, role: str) -> Dict[str, Any]:
+    now = _utc_now()
+    with _get_connection() as connection:
+        existing = connection.execute(
+            "SELECT id FROM users WHERE id = ?",
+            (user_id,),
+        ).fetchone()
+        if existing is None:
+            raise ValueError("用户不存在。")
+        connection.execute(
+            "UPDATE users SET full_name = ?, role = ?, updated_at = ? WHERE id = ?",
+            (full_name.strip(), role.strip() or "案件申请人", now, user_id),
+        )
+        updated = connection.execute(
+            "SELECT * FROM users WHERE id = ?",
+            (user_id,),
+        ).fetchone()
+    return _row_to_user(updated) or {}
+
+
 def create_session(user_id: int) -> str:
     token = secrets.token_urlsafe(32)
     now = datetime.now(timezone.utc)

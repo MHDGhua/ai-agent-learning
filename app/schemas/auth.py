@@ -38,6 +38,11 @@ class PasswordChangeRequest(BaseModel):
         return _validate_password_strength(value)
 
 
+class ProfileUpdateRequest(BaseModel):
+    full_name: str = Field(min_length=1, max_length=80)
+    role: str = Field(default="案件申请人", min_length=1, max_length=40)
+
+
 class UserResponse(BaseModel):
     id: int
     email: str

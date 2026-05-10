@@ -2,14 +2,14 @@
 
 ## 项目概述
 
-这是一个面向普通劳动者的重庆劳动仲裁助手，后端基于 FastAPI 与多 Agent 规则/检索能力，前端采用 Vue 3 + Vite 工作台，支持真实账户、服务端案件保存、案情分析、文书生成和重庆本地参考。
+这是一个面向普通劳动者的重庆劳动仲裁助手，后端基于 FastAPI 与多 Agent 规则/检索能力，前端采用 Vue 3 + Vite 工作台，支持真实账户、资料维护、服务端案件保存、旧版本地记录导入、案情分析、文书生成和重庆本地参考。
 
 ## 项目结构
 
 ```
 L-ERAP-PRO/
-├── app/                        # FastAPI 后端、Agent、规则与持久化
-├── frontend/                   # Vue 3 + Vite 前端
+├── app/                        # FastAPI 后端、Agent、规则、服务层与持久化
+├── frontend/                   # Vue 3 + Vite 前端（组件化）
 ├── docs/                       # 项目与部署文档
 ├── scripts/                    # 数据处理与验证脚本
 ├── tests/                      # 后端合同与场景测试
@@ -76,8 +76,10 @@ npm run dev
 - 构建后或容器模式：`http://127.0.0.1:8000/`
 
 - 前端源码入口位于 `frontend/src/App.vue`
+- 前端状态主逻辑位于 `frontend/src/composables/useWorkspaceApp.js`
 - API 默认走同源，也可通过 `VITE_API_BASE_URL` 指向独立后端地址
 - 登录成功后，案件快照、文书草稿和活动记录会保存到服务端 SQLite
+- 如果浏览器中仍有旧版 `localStorage` 历史记录，登录后可在侧边栏一键迁移到服务端
 
 ### 本地模式说明
 默认使用本地兜底模式，不依赖外部大模型即可完成案件分析、文书生成和基础测试。

@@ -63,6 +63,17 @@ class LocalArbitrationTests(unittest.TestCase):
         self.assertEqual(me_res.status_code, 200)
         self.assertEqual(me_res.json()["user"]["email"], email)
 
+        profile_res = client.put(
+            "/auth/profile",
+            json={
+                "full_name": "新测试用户",
+                "role": "劳动者",
+            },
+        )
+        self.assertEqual(profile_res.status_code, 200)
+        self.assertEqual(profile_res.json()["user"]["full_name"], "新测试用户")
+        self.assertEqual(profile_res.json()["user"]["role"], "劳动者")
+
         change_password_res = client.post(
             "/auth/change-password",
             json={
@@ -86,6 +97,42 @@ class LocalArbitrationTests(unittest.TestCase):
             json={"email": email, "password": "NewPass456"},
         )
         self.assertEqual(login_with_new_password.status_code, 200)
+
+        import_res = client.post(
+            "/workspace/import-legacy",
+            json={
+                "history_entries": [
+                    {
+                        "title": "旧版工资案件",
+                        "kindLabel": "案情整理",
+                        "readiness": "补充事实和证据",
+                        "primaryFinding": "旧版主结论",
+                        "nextBestAction": "旧版下一步",
+                        "caseForm": {
+                            "facts": sample_case()["facts"],
+                            "goal": "旧版导入",
+                            "years": 2.2,
+                            "contact_phone": "13900000000",
+                            "applicant_info": {
+                                "name": "张三",
+                                "employer_name": "重庆某科技公司",
+                                "workplace": "重庆市渝北区",
+                                "salary": 12000,
+                            },
+                        },
+                        "evidenceText": "劳动合同\n工资流水",
+                        "documentResult": {"document_type": "仲裁申请书", "content": "旧版草稿"},
+                        "documentValidation": {"is_valid": True, "issues": [], "warnings": [], "suggestions": []},
+                    }
+                ],
+                "activities": [
+                    {"title": "旧版动作", "detail": "浏览器本地记录迁移测试"}
+                ],
+            },
+        )
+        self.assertEqual(import_res.status_code, 200)
+        self.assertEqual(import_res.json()["imported_cases"], 1)
+        self.assertEqual(import_res.json()["imported_activities"], 1)
 
         save_res = client.post(
             "/workspace/cases",
