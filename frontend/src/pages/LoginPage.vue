@@ -74,8 +74,8 @@ function validateForm() {
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(form.email)) {
     return "请输入有效邮箱。";
   }
-  if (form.password.length < 8) {
-    return "密码至少需要 8 位。";
+  if (!form.password) {
+    return "请输入密码。";
   }
   return "";
 }
