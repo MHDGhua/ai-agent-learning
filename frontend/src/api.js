@@ -8,6 +8,32 @@ export class ApiError extends Error {
   }
 }
 
+function formatErrorDetail(detail) {
+  if (typeof detail === "string") {
+    return detail;
+  }
+  if (Array.isArray(detail)) {
+    const messages = detail
+      .map((item) => {
+        if (typeof item === "string") {
+          return item;
+        }
+        if (item && typeof item === "object") {
+          const location = Array.isArray(item.loc) ? item.loc.filter((part) => part !== "body").join(".") : "";
+          const message = item.msg || item.message || "请求参数错误";
+          return location ? `${location}: ${message}` : message;
+        }
+        return "";
+      })
+      .filter(Boolean);
+    return messages.join("；") || "请求参数错误";
+  }
+  if (detail && typeof detail === "object") {
+    return detail.message || detail.error || JSON.stringify(detail);
+  }
+  return "请求失败";
+}
+
 async function apiRequest(path, options = {}) {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     credentials: "include",
@@ -28,11 +54,8 @@ async function apiRequest(path, options = {}) {
     : await response.text();
 
   if (!response.ok) {
-    const detail =
-      typeof payload === "object" && payload !== null && "detail" in payload
-        ? payload.detail
-        : "请求失败";
-    throw new ApiError(String(detail), response.status);
+    const detail = typeof payload === "object" && payload !== null && "detail" in payload ? payload.detail : payload;
+    throw new ApiError(formatErrorDetail(detail), response.status);
   }
 
   return payload;
