@@ -1,6 +1,7 @@
 import asyncio
 import os
 import unittest
+import uuid
 
 os.environ.setdefault("LLM_PROVIDER", "local")
 
@@ -188,6 +189,105 @@ class LocalArbitrationTests(unittest.TestCase):
         review = workup_payload["analysis"].get("opposition_review") or {}
         self.assertIn("agent_result", review.get("red_lawyer_analysis", {}))
         self.assertIn("agent_result", review.get("blue_lawyer_analysis", {}))
+
+    def test_workspace_farui_style_resources_and_consultation(self):
+        client = TestClient(create_app())
+        email = f"worker-{uuid.uuid4().hex}@example.com"
+        register_res = client.post(
+            "/auth/register",
+            json={
+                "email": email,
+                "password": "Password123!",
+                "full_name": "测试用户",
+                "role": "案件申请人",
+            },
+        )
+        self.assertEqual(register_res.status_code, 201)
+
+        skills_res = client.get("/workspace/skills")
+        self.assertEqual(skills_res.status_code, 200)
+        skill_ids = [item["id"] for item in skills_res.json()["items"]]
+        self.assertIn("file_review", skill_ids)
+        self.assertIn("hearing_outline", skill_ids)
+
+        case_res = client.post(
+            "/workspace/cases",
+            json={
+                "case_type": "工资报酬纠纷",
+                "primary_finding": "拖欠工资",
+                "readiness": "60%",
+                "next_best_action": "补齐证据",
+                "snapshot": {
+                    "caseForm": {
+                        "facts": sample_case()["facts"],
+                        "years": 2.2,
+                        "applicant_info": sample_case()["applicant_info"],
+                    },
+                    "evidence": sample_case()["evidence"],
+                },
+            },
+        )
+        self.assertEqual(case_res.status_code, 200)
+        case_id = case_res.json()["id"]
+
+        file_res = client.post(
+            f"/workspace/cases/{case_id}/files",
+            json={
+                "filename": "仲裁申请书草稿.txt",
+                "file_type": "text/plain",
+                "content": "申请人主张拖欠工资和加班费，证据包括劳动合同、工资流水、聊天记录。",
+            },
+        )
+        self.assertEqual(file_res.status_code, 200)
+        file_id = file_res.json()["id"]
+
+        knowledge_res = client.post(
+            f"/workspace/cases/{case_id}/knowledge",
+            json={
+                "title": "重庆工资争议提示",
+                "source": "manual",
+                "content": "拖欠劳动报酬应重点保存工资流水、考勤和催告记录。",
+            },
+        )
+        self.assertEqual(knowledge_res.status_code, 200)
+
+        consult_res = client.post(
+            f"/workspace/cases/{case_id}/consult",
+            json={
+                "message": "阅读申请书草稿，整理一下庭审问答题纲。",
+                "skill_id": "hearing_outline",
+                "file_ids": [file_id],
+                "knowledge_query": "重庆 工资 拖欠",
+                "deep_think": True,
+            },
+        )
+        self.assertEqual(consult_res.status_code, 200)
+        consult_payload = consult_res.json()
+        self.assertEqual(consult_payload["skill_id"], "hearing_outline")
+        self.assertIn("庭审问答", consult_payload["assistant_message"])
+        self.assertTrue(consult_payload["pipeline_status"])
+        self.assertTrue(consult_payload["citations"])
+        self.assertTrue(any(step["name"] == "resolve_skill" for step in consult_payload["pipeline_status"]))
+
+        fallback_res = client.post(
+            f"/workspace/cases/{case_id}/consult",
+            json={
+                "message": "帮我判断下一步怎么准备。",
+                "skill_id": "unknown_skill",
+            },
+        )
+        self.assertEqual(fallback_res.status_code, 200)
+        fallback_payload = fallback_res.json()
+        self.assertEqual(fallback_payload["skill_id"], "legal_consult")
+        self.assertTrue(any(step["status"] == "warning" for step in fallback_payload["pipeline_status"]))
+
+        messages_res = client.get(f"/workspace/cases/{case_id}/messages")
+        self.assertEqual(messages_res.status_code, 200)
+        self.assertTrue(messages_res.json()["items"])
+
+        search_res = client.get("/workspace/knowledge/search", params={"query": "重庆 工资 拖欠", "limit": 3})
+        self.assertEqual(search_res.status_code, 200)
+        self.assertIn("items", search_res.json())
 
     def test_rag_retrieval_returns_context_or_fallback(self):
         result = retrieve_context("重庆 劳动法 工资 拖欠", top_k=2)

@@ -93,9 +93,54 @@ def ensure_database() -> None:
                 FOREIGN KEY (case_id) REFERENCES saved_cases(id) ON DELETE SET NULL
             );
 
+            CREATE TABLE IF NOT EXISTS workspace_messages (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                case_id INTEGER NOT NULL,
+                skill_id TEXT NOT NULL DEFAULT '',
+                skill_name TEXT NOT NULL DEFAULT '',
+                user_message TEXT NOT NULL,
+                assistant_message TEXT NOT NULL,
+                summary TEXT NOT NULL DEFAULT '',
+                response_json TEXT NOT NULL DEFAULT '{}',
+                created_at TEXT NOT NULL,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                FOREIGN KEY (case_id) REFERENCES saved_cases(id) ON DELETE CASCADE
+            );
+
+            CREATE TABLE IF NOT EXISTS workspace_files (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                case_id INTEGER NOT NULL,
+                filename TEXT NOT NULL,
+                file_type TEXT NOT NULL DEFAULT 'text/plain',
+                note TEXT NOT NULL DEFAULT '',
+                content_text TEXT NOT NULL DEFAULT '',
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                FOREIGN KEY (case_id) REFERENCES saved_cases(id) ON DELETE CASCADE
+            );
+
+            CREATE TABLE IF NOT EXISTS workspace_knowledge (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                case_id INTEGER NOT NULL,
+                title TEXT NOT NULL,
+                source TEXT NOT NULL DEFAULT 'manual',
+                content_text TEXT NOT NULL DEFAULT '',
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                FOREIGN KEY (case_id) REFERENCES saved_cases(id) ON DELETE CASCADE
+            );
+
             CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);
             CREATE INDEX IF NOT EXISTS idx_saved_cases_user_id ON saved_cases(user_id, updated_at DESC);
             CREATE INDEX IF NOT EXISTS idx_activities_user_id ON activities(user_id, created_at DESC);
+            CREATE INDEX IF NOT EXISTS idx_workspace_messages_case_id ON workspace_messages(case_id, created_at DESC);
+            CREATE INDEX IF NOT EXISTS idx_workspace_files_case_id ON workspace_files(case_id, updated_at DESC);
+            CREATE INDEX IF NOT EXISTS idx_workspace_knowledge_case_id ON workspace_knowledge(case_id, updated_at DESC);
             """
         )
 
@@ -426,3 +471,209 @@ def list_activities(user_id: int, limit: int = 20) -> List[Dict[str, Any]]:
         }
         for row in rows
     ]
+
+
+def _truncate(value: Any, max_chars: int = 240) -> str:
+    text = str(value or "")
+    if len(text) <= max_chars:
+        return text
+    return text[:max_chars] + "..."
+
+
+def save_workspace_message(
+    user_id: int,
+    case_id: int,
+    *,
+    skill_id: str,
+    skill_name: str,
+    user_message: str,
+    assistant_message: str,
+    summary: str,
+    response_json: Dict[str, Any],
+) -> Dict[str, Any]:
+    now = _utc_now()
+    with _get_connection() as connection:
+        cursor = connection.execute(
+            """
+            INSERT INTO workspace_messages (
+                user_id, case_id, skill_id, skill_name, user_message,
+                assistant_message, summary, response_json, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                user_id,
+                case_id,
+                skill_id,
+                skill_name,
+                user_message,
+                assistant_message,
+                summary,
+                json.dumps(response_json, ensure_ascii=False),
+                now,
+            ),
+        )
+        row = connection.execute(
+            "SELECT * FROM workspace_messages WHERE id = ?",
+            (cursor.lastrowid,),
+        ).fetchone()
+    return _row_to_workspace_message(row) or {}
+
+
+def list_workspace_messages(user_id: int, case_id: int, limit: int = 20) -> List[Dict[str, Any]]:
+    with _get_connection() as connection:
+        rows = connection.execute(
+            """
+            SELECT * FROM workspace_messages
+            WHERE user_id = ? AND case_id = ?
+            ORDER BY created_at DESC
+            LIMIT ?
+            """,
+            (user_id, case_id, limit),
+        ).fetchall()
+    return [_row_to_workspace_message(row) for row in rows]
+
+
+def _row_to_workspace_message(row: sqlite3.Row) -> Dict[str, Any]:
+    return {
+        "id": row["id"],
+        "case_id": row["case_id"],
+        "skill_id": row["skill_id"],
+        "skill_name": row["skill_name"],
+        "user_message": row["user_message"],
+        "assistant_message": row["assistant_message"],
+        "summary": row["summary"],
+        "response_json": json.loads(row["response_json"] or "{}"),
+        "created_at": row["created_at"],
+    }
+
+
+def save_workspace_file(
+    user_id: int,
+    case_id: int,
+    *,
+    filename: str,
+    file_type: str,
+    note: str,
+    content_text: str,
+) -> Dict[str, Any]:
+    now = _utc_now()
+    with _get_connection() as connection:
+        cursor = connection.execute(
+            """
+            INSERT INTO workspace_files (
+                user_id, case_id, filename, file_type, note, content_text, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                user_id,
+                case_id,
+                filename.strip(),
+                file_type.strip() or "text/plain",
+                note.strip(),
+                content_text,
+                now,
+                now,
+            ),
+        )
+        row = connection.execute(
+            "SELECT * FROM workspace_files WHERE id = ?",
+            (cursor.lastrowid,),
+        ).fetchone()
+    return _row_to_workspace_file(row) or {}
+
+
+def list_workspace_files(user_id: int, case_id: int, limit: int = 50) -> List[Dict[str, Any]]:
+    with _get_connection() as connection:
+        rows = connection.execute(
+            """
+            SELECT * FROM workspace_files
+            WHERE user_id = ? AND case_id = ?
+            ORDER BY updated_at DESC
+            LIMIT ?
+            """,
+            (user_id, case_id, limit),
+        ).fetchall()
+    return [_row_to_workspace_file(row) for row in rows]
+
+
+def get_workspace_file(user_id: int, case_id: int, file_id: int) -> Optional[Dict[str, Any]]:
+    with _get_connection() as connection:
+        row = connection.execute(
+            "SELECT * FROM workspace_files WHERE id = ? AND user_id = ? AND case_id = ?",
+            (file_id, user_id, case_id),
+        ).fetchone()
+    return _row_to_workspace_file(row) if row is not None else None
+
+
+def _row_to_workspace_file(row: sqlite3.Row) -> Dict[str, Any]:
+    return {
+        "id": row["id"],
+        "case_id": row["case_id"],
+        "filename": row["filename"],
+        "file_type": row["file_type"],
+        "note": row["note"],
+        "content_text": row["content_text"],
+        "content_preview": _truncate(row["content_text"]),
+        "created_at": row["created_at"],
+        "updated_at": row["updated_at"],
+    }
+
+
+def save_workspace_knowledge(
+    user_id: int,
+    case_id: int,
+    *,
+    title: str,
+    source: str,
+    content_text: str,
+) -> Dict[str, Any]:
+    now = _utc_now()
+    with _get_connection() as connection:
+        cursor = connection.execute(
+            """
+            INSERT INTO workspace_knowledge (
+                user_id, case_id, title, source, content_text, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                user_id,
+                case_id,
+                title.strip(),
+                source.strip() or "manual",
+                content_text,
+                now,
+                now,
+            ),
+        )
+        row = connection.execute(
+            "SELECT * FROM workspace_knowledge WHERE id = ?",
+            (cursor.lastrowid,),
+        ).fetchone()
+    return _row_to_workspace_knowledge(row) or {}
+
+
+def list_workspace_knowledge(user_id: int, case_id: int, limit: int = 50) -> List[Dict[str, Any]]:
+    with _get_connection() as connection:
+        rows = connection.execute(
+            """
+            SELECT * FROM workspace_knowledge
+            WHERE user_id = ? AND case_id = ?
+            ORDER BY updated_at DESC
+            LIMIT ?
+            """,
+            (user_id, case_id, limit),
+        ).fetchall()
+    return [_row_to_workspace_knowledge(row) for row in rows]
+
+
+def _row_to_workspace_knowledge(row: sqlite3.Row) -> Dict[str, Any]:
+    return {
+        "id": row["id"],
+        "case_id": row["case_id"],
+        "title": row["title"],
+        "source": row["source"],
+        "content_text": row["content_text"],
+        "content_preview": _truncate(row["content_text"]),
+        "created_at": row["created_at"],
+        "updated_at": row["updated_at"],
+    }

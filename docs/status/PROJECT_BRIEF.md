@@ -1,6 +1,6 @@
 # L-ERAP-PRO 项目状态总览
 
-最后更新：2026-05-10
+最后更新：2026-05-11
 
 ## 阅读目的
 
@@ -39,6 +39,8 @@ L-ERAP-PRO 是一个面向普通劳动者的重庆劳动仲裁助手。用户用
 - `app/services/chongqing_calculator.py`：重庆劳动争议金额计算能力。
 - `app/services/chongqing_precedent.py`：重庆本地参考资料组织。
 - `app/services/rag_retriever.py`：RAG 检索入口。
+- `app/api/workspace.py`：Farui 风格后端工作台入口，提供技能、文件、知识、咨询和历史。
+- `app/services/legal_workspace_assistant.py`：工作台统一助手，负责技能路由、文件审查、知识召回和咨询输出。
 - `tests/test_local_arbitration.py`：本地 API 与核心功能合同测试。
 - `tests/test_labor_arbitration_cases.py`：20 个典型劳动仲裁案例测试。
 
@@ -53,6 +55,14 @@ L-ERAP-PRO 是一个面向普通劳动者的重庆劳动仲裁助手。用户用
 - `POST /arbitration/calculate-claim`：内部金额快算能力，可算经济补偿/违法解除、加班费、工伤一次性伤残补助金。
 - `POST /arbitration/intake-checklist`：返回还需要补充的问题、证据清单、管辖和时效信息。
 - `GET /arbitration/local-references`：返回重庆本地法规、案例或办事参考摘要。
+- `GET /workspace/skills`：返回 Farui 风格的固定技能目录。
+- `POST /workspace/cases/{case_id}/files`：把文本文件加入案件工作台。
+- `GET /workspace/cases/{case_id}/files`：查看案件文件。
+- `POST /workspace/cases/{case_id}/knowledge`：保存项目内知识条目。
+- `GET /workspace/cases/{case_id}/knowledge`：查看项目内知识。
+- `GET /workspace/knowledge/search`：检索重庆本地参考和知识召回结果。
+- `POST /workspace/cases/{case_id}/consult`：统一咨询入口，按技能、文件、知识和案件上下文输出结果。
+- `GET /workspace/cases/{case_id}/messages`：查看案件咨询历史。
 
 ## 重要技术要求
 
@@ -64,6 +74,8 @@ L-ERAP-PRO 是一个面向普通劳动者的重庆劳动仲裁助手。用户用
 - RAG 使用本地检索能力和重庆本地资料，不应无节制引入全国泛化信息。
 - 文书生成必须可审计、可校验，不应直接承诺法律结果。
 - 测试以本地规则可跑通为底线，不能依赖真实外部 LLM 才能通过。
+- 工作台咨询不直接暴露 prompt 拼接给前端，技能选择由后端兜底，未知值会回落到 `legal_consult`。
+- 文件与知识输入要加长度限制，避免单次咨询把上下文和存储撑爆。
 
 ## 当前已完成进度
 
@@ -76,6 +88,7 @@ L-ERAP-PRO 是一个面向普通劳动者的重庆劳动仲裁助手。用户用
 - 文书一致性校验接口已支持。
 - DeepSeek 官方模型配置已接入。
 - 20 个劳动仲裁典型案例测试已编写。
+- Farui 风格后端工作台已接入，包含技能目录、案件文件、项目知识、咨询历史和统一咨询入口。
 - 前端已重做为接待式单案件布局：首页围绕自然语言录入和关键结论，不再沿袭旧工作台导航和英文模块命名。
 - 前端已隐藏 API 地址配置入口，保留同源请求与历史兼容注入，不再向普通用户暴露部署配置。
 
@@ -84,6 +97,9 @@ L-ERAP-PRO 是一个面向普通劳动者的重庆劳动仲裁助手。用户用
 - 最近一次已知验证：`.\.venv\Scripts\python.exe -m compileall app tests` 通过。
 - 最近一次已知验证：`.\.venv\Scripts\python.exe -m unittest discover -s tests -v` 通过，10 个测试 OK。
 - 最近一次已知验证：Playwright 联调桌面端与移动端新版前端通过，截图输出 `output/playwright/redesign-desktop.png`、`output/playwright/redesign-mobile.png`。
+- 最近一次已知验证：`python -m compileall app scripts tests` 通过。
+- 最近一次已知验证：`python -m unittest discover -s tests -v` 通过，11 个测试 OK。
+- 最近一次已知验证：`python scripts/run_case_matrix.py` 通过，20/20 案例 PASS。
 - 测试中可能出现第三方 telemetry warning，不影响功能运行。
 
 ## 后续开发优先级

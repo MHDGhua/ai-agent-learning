@@ -1,6 +1,6 @@
 # PROJECT_STATE
 
-最后更新：2026-05-10
+最后更新：2026-05-11
 
 ## 项目定位
 
@@ -38,6 +38,9 @@ L-ERAP-PRO 是面向普通劳动者的重庆劳动仲裁助手，不是专业律
 - 测试入口：`tests/test_local_arbitration.py`、`tests/test_labor_arbitration_cases.py`
 - 案例矩阵报告脚本：`scripts/run_case_matrix.py`
 - LangSmith 监测说明：`docs/status/LANGSMITH_MONITORING.md`
+- Farui 风格后端映射：`docs/status/FARUI_BACKEND_MAPPING.md`
+- 工作台 API：`app/api/workspace.py`
+- 工作台助手：`app/services/legal_workspace_assistant.py`
 
 ## 已完成的重要改动
 
@@ -58,6 +61,10 @@ L-ERAP-PRO 是面向普通劳动者的重庆劳动仲裁助手，不是专业律
 - 修复未休年假工资纠纷被误识别为普通拖欠工资的问题。
 - DeepSeek 模型接入配置已完成，用户已填写 API。
 - 之前误做的“项目内部 LLM token 瘦身”已撤回，项目调用逻辑保持原状。
+- 已参考 Farui 的法律咨询、文件审查、知识检索、技能工作台思路，新增后端 `/workspace/*` 能力：技能目录、案件文件、项目知识、知识检索、统一咨询、咨询历史。
+- 新增 `LegalWorkspaceAssistant`，把法律咨询、文件审查、多维检索、庭审题纲、仲裁准备统一成固定技能，前端不需要直接拼 prompt。
+- 工作台咨询已接入案件上下文、项目文件、项目知识、重庆本地检索、阶段状态和历史落库。
+- 工作台输入已加长度限制，未知 `skill_id` 会稳定兜底为 `legal_consult` 并在 `pipeline_status` 中标记 warning，避免脏参数破坏调用链。
 
 ## 最近验证
 
@@ -73,6 +80,9 @@ L-ERAP-PRO 是面向普通劳动者的重庆劳动仲裁助手，不是专业律
 - 2026-05-10：`.\.venv\Scripts\python.exe -m unittest discover -s tests -v` 通过，10 个测试 OK，新增流水线/Agent 契约断言。
 - 2026-05-10：`.\.venv\Scripts\python.exe -m compileall app scripts tests` 通过。
 - 2026-05-10：前端文案检查通过，未再出现 `API 地址`、`http://localhost`、`说清楚事实`、`看懂结果`、`拿到材料`、`红蓝对抗` 等前台暴露文本。
+- 2026-05-11：`python -m compileall app scripts tests` 通过。
+- 2026-05-11：`python -m unittest discover -s tests -v` 通过，11 个测试 OK，覆盖 Farui 风格工作台资源、咨询、技能兜底。
+- 2026-05-11：`python scripts/run_case_matrix.py` 通过，20/20 案例 PASS，报告已写入 `output/case_matrix_latest.md/json`。
 - `.\.venv\Scripts\python.exe -m compileall app tests` 通过。
 - `.\.venv\Scripts\python.exe -m unittest discover -s tests -v` 通过，8 个测试 OK。
 - 测试中出现第三方 telemetry warning，不影响运行。
