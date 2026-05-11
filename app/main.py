@@ -61,6 +61,7 @@ def register_frontend(app: FastAPI) -> None:
     app.mount("/frontend", StaticFiles(directory=str(static_dir)), name="frontend")
 
     @app.get("/", include_in_schema=False)
+    @app.get("/assistant", include_in_schema=False)
     async def frontend_index():
         return FileResponse(FRONTEND_INDEX)
 
@@ -88,11 +89,7 @@ def create_app() -> FastAPI:
     register_frontend(app)
     
     # 初始化API工厂
-    api_factory = APIFactory()
-    
-    # 可以在这里添加API工厂的初始化逻辑
-    print("API工厂已初始化")
-    print(f"可用API: {api_factory.get_available_apis()}")
+    APIFactory()
     
     return app
 

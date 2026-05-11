@@ -34,17 +34,23 @@ def sample_case():
 
 
 class LocalArbitrationTests(unittest.TestCase):
-    def test_root_serves_frontend_redesign(self):
+    def test_frontend_entrypoints_serve_new_homepage_and_workspace_copy(self):
         client = TestClient(create_app())
-        response = client.get("/")
-        self.assertEqual(response.status_code, 200)
-        self.assertIn("L-ERAP PRO", response.text)
-        self.assertIn("重庆劳动仲裁助手", response.text)
-        self.assertIn("当前案件", response.text)
-        self.assertIn("把案情说清楚", response.text)
-        self.assertIn("智能接待", response.text)
-        self.assertNotIn("API Base URL", response.text)
-        self.assertNotIn("Workspace Home", response.text)
+        for path in ("/", "/assistant"):
+            with self.subTest(path=path):
+                response = client.get(path)
+                self.assertEqual(response.status_code, 200)
+                self.assertIn("L-ERAP PRO", response.text)
+                self.assertIn("重庆劳动争议智能工作台", response.text)
+                self.assertIn("让每一份", response.text)
+                self.assertIn("劳动争议材料", response.text)
+                self.assertIn("案件研判工作台", response.text)
+                self.assertIn("开始研判", response.text)
+                self.assertIn("重庆本地依据", response.text)
+                self.assertNotIn("API Base URL", response.text)
+                self.assertNotIn("Workspace Home", response.text)
+                self.assertNotIn("当前案件", response.text)
+                self.assertNotIn("智能接待", response.text)
 
     def test_llm_local_mode_basic(self):
         client = LLMClient()
