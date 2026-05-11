@@ -70,11 +70,8 @@ def register_frontend(app: FastAPI) -> None:
     app.mount("/frontend", StaticFiles(directory=str(static_dir)), name="frontend")
 
     @app.get("/", include_in_schema=False)
-    async def frontend_index():
-        return FileResponse(FRONTEND_INDEX)
-
     @app.get("/assistant", include_in_schema=False)
-    async def frontend_assistant():
+    async def frontend_index():
         return FileResponse(FRONTEND_INDEX)
 
     @app.get("/{full_path:path}", include_in_schema=False)
